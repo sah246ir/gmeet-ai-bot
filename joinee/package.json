@@ -1,0 +1,25 @@
+{
+  "name": "joinee",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "npx tsc -b && node dist/index.js",
+    "login": "npx tsc -b && node dist/save-session.js",
+    "build": "npx tsc -b"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@types/dotenv": "^8.2.3",
+    "dotenv": "^17.4.2",
+    "playwright": "^1.60.0",
+    "readline": "^1.3.0",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0"
+  }
+}

@@ -1,0 +1,42 @@
+FROM node:20-bookworm AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+RUN npm run build
+
+
+FROM node:20-bookworm AS runner
+
+WORKDIR /app
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    pulseaudio \
+    pulseaudio-utils \
+    ffmpeg \
+    xvfb \
+    dbus \
+    alsa-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN useradd -ms /bin/bash bot
+
+COPY package*.json ./
+RUN npm install --omit=dev
+RUN npx playwright install chrome
+
+COPY --from=builder /app/dist ./dist
+COPY --chown=bot:bot . .
+
+RUN chown -R bot:bot /app
+
+USER bot
+
+EXPOSE 3000
+
+CMD ["bash", "start.sh"]
