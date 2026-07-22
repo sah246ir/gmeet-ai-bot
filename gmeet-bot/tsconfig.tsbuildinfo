@@ -1,0 +1,1 @@
+{"root":["./src/index.ts","./src/http/app.ts","./src/http/routes.ts","./src/lib/prisma.ts","./src/lib/redis.ts","./src/queue/connection.ts","./src/queue/meeting.queue.ts","./src/queue/meeting.worker.ts","./src/ws/server.ts"],"version":"5.9.3"}

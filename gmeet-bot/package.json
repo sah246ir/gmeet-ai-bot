@@ -1,0 +1,36 @@
+{
+  "name": "gmeet-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "npx tsc -b",
+    "start": "npx tsc -b && node dist/index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "express": "^5",
+    "ws": "^8",
+    "@prisma/client": "^6",
+    "bullmq": "^5",
+    "ioredis": "^5",
+    "dotenv": "^17"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^25",
+    "@types/express": "^5",
+    "@types/ws": "^8",
+    "prisma": "^6",
+    "tsx": "^4"
+  },
+  "allowScripts": {
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true,
+    "esbuild@0.28.1": true,
+    "msgpackr-extract@3.0.4": true,
+    "prisma@6.19.3": true
+  }
+}
