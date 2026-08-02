@@ -7,6 +7,12 @@ export function attachWebSocketServer(httpServer: HttpServer) {
   wss.on('connection', (socket) => {
     socket.on('message', (data) => {
       console.log('ws message received', data.toString());
+      wss.clients.forEach(client => {
+        console.log('client', client.url);
+        if (client.readyState === WebSocket.OPEN ) {
+          client.send(data.toString());
+        }
+      });
     });
   });
 
