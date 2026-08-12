@@ -5,10 +5,10 @@ export class AudioManager {
     constructor(){
         this.clients = new Map()
     }
-    createInstance(meetingId: string) {
+    async createInstance(meetingId: string) {
         const client = new Deepgram(meetingId);
         this.clients.set(meetingId, client);
-        client.startSession()
+        await client.startSession()
         return client;
     }
 

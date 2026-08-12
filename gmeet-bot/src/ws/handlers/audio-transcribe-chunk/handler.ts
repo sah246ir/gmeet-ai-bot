@@ -1,15 +1,15 @@
 import { TranscribeManager } from "../../..";
 import { AudioTranscribeChunkSchemaType } from "./schema";
 
-export const audioTranscribeChunkHandler = (event:AudioTranscribeChunkSchemaType)=>{
+export const audioTranscribeChunkHandler = async (event:AudioTranscribeChunkSchemaType)=>{
     let client = TranscribeManager.getInstance(event.meetingId)
     if(client===undefined){
-        client = TranscribeManager.createInstance(event.meetingId)
+        client = await TranscribeManager.createInstance(event.meetingId)
         client.onTranscript((event)=>{
             console.log(event.text)
         })
     }
 
-    client.sendAudio(Buffer.from(event.data, "base64"))
+    await client.sendAudio(Buffer.from(event.data, "base64"))
     
 }
