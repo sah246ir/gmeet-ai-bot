@@ -22,7 +22,7 @@ export class Deepgram {
     private transcriptHandler?: TranscriptHandler;
     constructor(meetingId: string) {
         this.client = new DeepgramClient({
-            apiKey: ENV.apiKey
+            apiKey: ENV.deepgramApiKey
         })
         this.meetingId = meetingId
     }
