@@ -21,4 +21,13 @@ export class AudioManager {
     removeInstance(meetingId: string) {
         this.clients.delete(meetingId)
     }
+
+    async stopAll() {
+        for (const [meetingId, client] of this.clients) {
+          await client.stopSession();
+          console.log(`Stopped Deepgram session: ${meetingId}`);
+        }
+
+        this.clients.clear();
+      }
 }
