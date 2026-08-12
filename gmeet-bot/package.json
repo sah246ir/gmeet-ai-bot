@@ -11,20 +11,21 @@
     "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "express": "^5",
-    "ws": "^8",
+    "@deepgram/sdk": "^5.8.0",
     "@prisma/client": "^6",
     "bullmq": "^5",
+    "dotenv": "^17",
+    "express": "^5",
     "ioredis": "^5",
-    "dotenv": "^17"
+    "ws": "^8"
   },
   "devDependencies": {
-    "typescript": "^5",
-    "@types/node": "^25",
     "@types/express": "^5",
+    "@types/node": "^25",
     "@types/ws": "^8",
     "prisma": "^6",
-    "tsx": "^4"
+    "tsx": "^4",
+    "typescript": "^5"
   },
   "allowScripts": {
     "@prisma/client@6.19.3": true,
