@@ -2,6 +2,7 @@ import type { Server as HttpServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { WSEventSchema } from './handlers/schema';
 import { audioTranscribeChunkHandler } from './handlers/audio-transcribe-chunk/handler';
+import { audioTranscribeEndHandler } from './handlers/audio-transcribe-end/handler';
 
 export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
@@ -16,6 +17,9 @@ export function attachWebSocketServer(httpServer: HttpServer) {
       switch(finaldata.type){
         case "audio-transcribe-chunk":
           audioTranscribeChunkHandler(finaldata)
+          break
+        case "audio-transcribe-end":
+          audioTranscribeEndHandler(finaldata)
           break
         default:
 

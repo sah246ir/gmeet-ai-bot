@@ -15,6 +15,10 @@ export class AudioManager {
     getInstance(meetingId:string){
         return this.clients.get(
             meetingId
-        ) 
+        )
+    }
+
+    removeInstance(meetingId: string) {
+        this.clients.delete(meetingId)
     }
 }

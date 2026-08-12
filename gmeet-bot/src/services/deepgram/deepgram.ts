@@ -39,7 +39,7 @@ export class Deepgram {
         await connection.waitForOpen()
         this.connection = connection
     }
-    public async stopSession(meetingId: string) {
+    public async stopSession() {
         this.connection?.close()
     }
 
