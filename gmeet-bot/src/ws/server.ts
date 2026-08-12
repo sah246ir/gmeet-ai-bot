@@ -1,18 +1,26 @@
 import type { Server as HttpServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
+import { WSEventSchema } from './handlers/schema';
+import { audioTranscribeChunkHandler } from './handlers/audio-transcribe-chunk/handler';
 
 export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
 
   wss.on('connection', (socket) => {
     socket.on('message', (data) => {
-      console.log('ws message received', data.toString());
-      wss.clients.forEach(client => {
-        console.log('client', client.url);
-        if (client.readyState === WebSocket.OPEN ) {
-          client.send(data.toString());
-        }
-      });
+      const eventData = JSON.parse(data.toString())
+      const parsedData = WSEventSchema.safeParse(eventData)
+      if(parsedData.error) throw Error()
+      
+      const finaldata = parsedData.data
+      switch(finaldata.type){
+        case "audio-transcribe-chunk":
+          audioTranscribeChunkHandler(finaldata)
+          break
+        default:
+
+      }
+
     });
   });
 
