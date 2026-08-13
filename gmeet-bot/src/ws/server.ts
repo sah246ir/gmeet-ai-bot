@@ -8,18 +8,21 @@ export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
 
   wss.on('connection', (socket) => {
-    socket.on('message', (data) => {
+    socket.on('message', async(data) => {
       const eventData = JSON.parse(data.toString())
       const parsedData = WSEventSchema.safeParse(eventData)
-      if(parsedData.error) throw Error()
+      if(parsedData.error){
+        console.log(parsedData.error)
+        throw Error()
+      }
       
       const finaldata = parsedData.data
       switch(finaldata.type){
         case "audio-transcribe-chunk":
-          audioTranscribeChunkHandler(finaldata)
+          await audioTranscribeChunkHandler(finaldata)
           break
         case "audio-transcribe-end":
-          audioTranscribeEndHandler(finaldata)
+          await audioTranscribeEndHandler(finaldata)
           break
         default:
 
