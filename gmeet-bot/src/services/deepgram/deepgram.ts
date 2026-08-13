@@ -62,6 +62,7 @@ export class Deepgram {
         connection?.on("message", (data ) => {
             if (data.type !== "Results") return;
             const alt = data.channel.alternatives[0];
+            console.log(alt)
 
             if (!alt.transcript?.trim()) return;
 
