@@ -1,14 +1,16 @@
 import { Deepgram } from "../deepgram/deepgram"
 
-export class AudioManager {
+export class TranscribeManager {
     private clients: Map<string,Deepgram>
     constructor(){
         this.clients = new Map()
     }
     async createInstance(meetingId: string) {
+        console.log("CREATING ",meetingId)
         const client = new Deepgram(meetingId);
         this.clients.set(meetingId, client);
         await client.startSession()
+        console.log("CREATED ",meetingId)
         return client;
     }
 
@@ -18,7 +20,8 @@ export class AudioManager {
         )
     }
 
-    removeInstance(meetingId: string) {
+    async removeInstance(meetingId: string) {
+        await this.getInstance(meetingId)?.stopSession()
         this.clients.delete(meetingId)
     }
 

@@ -4,16 +4,16 @@ import { createApp } from './http/app.js';
 import { attachWebSocketServer } from './ws/server.js';
 import './queue/transcribe-chunker/transcribeChunker.worker.js';
 import { ENV } from './lib/ENV.js';
-import { AudioManager } from './services/audio-manager/audioManager.js';
+import { TranscribeManager as TM } from './services/transcribe-manager/transcribeManager.js';
 
 const app = createApp();
-export const TranscribeManager = new AudioManager()
+export const TranscribeManager = new TM()
 
 const server = http.createServer(app);
 attachWebSocketServer(server);
 
 const port = Number(ENV.port ?? 3000);
-server.listen(port, () => console.log(`gmeet-bot listening on :${port}`));
+server.listen(port, () => console.log(`sgmeet-bot listening on :${port}`));
 
 const shutdown = async () => {
     console.log("Shutting down...");
