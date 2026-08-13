@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { meetingQueue } from '../queue/meeting.queue.js';
+import { transcribeChunkerQueue } from '../queue/transcribe-chunker/transcribeChunker.queue.js';
 
 export const router = Router();
 
@@ -15,12 +15,7 @@ router.post('/meetings', async (req, res) => {
     return res.status(400).json({ error: 'url is required' });
   }
 
-  const meeting = await prisma.meeting.create({ data: { url } });
-  const job = await prisma.job.create({ data: { meetingId: meeting.id } });
 
-  await meetingQueue.add('join', { meetingId: meeting.id, jobId: job.id });
-
-  res.status(201).json({ meeting, job });
 });
 
 router.get('/meetings/:id', async (req, res) => {
