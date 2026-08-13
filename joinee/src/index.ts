@@ -11,7 +11,7 @@ async function main() {
     audioStream.on('data', (data: Buffer)=>{
         consumer.send(
             JSON.stringify({
-                type:"sandbox-audio-chunk",
+                type:"audio-transcribe-chunk",
                 data: data.toString('base64'),
                 meetingId: ENV.MEETING_ID,
                 index: index++,
