@@ -32,6 +32,9 @@ export class Deepgram {
             model: "nova-3",
             language: "en-US",
             smart_format: "true",
+            encoding: "linear16",
+            sample_rate: 16000,
+            channels: 1,
 
         });
         this.registerListeners(connection)
@@ -58,7 +61,6 @@ export class Deepgram {
 
         connection?.on("message", (data ) => {
             if (data.type !== "Results") return;
-
             const alt = data.channel.alternatives[0];
 
             if (!alt.transcript?.trim()) return;
