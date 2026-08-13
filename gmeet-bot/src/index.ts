@@ -2,7 +2,7 @@ import 'dotenv/config';
 import http from 'node:http';
 import { createApp } from './http/app.js';
 import { attachWebSocketServer } from './ws/server.js';
-import './queue/meeting.worker.js';
+import './queue/transcribe-chunker/transcribeChunker.worker.js';
 import { ENV } from './lib/ENV.js';
 import { AudioManager } from './services/audio-manager/audioManager.js';
 
