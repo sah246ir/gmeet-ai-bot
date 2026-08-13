@@ -13,6 +13,13 @@ enum JobStatus {
   COMPLETED
   FAILED
 }
+enum JobType {
+  PROCESS_TRANSCRIPT
+  GENERATE_EMBEDDINGS
+  INDEX_PINECONE
+  GENERATE_SUMMARY
+  EXTRACT_ACTION_ITEMS
+}
 
 model Meeting {
   id        String    @id @default(cuid())
@@ -21,14 +28,38 @@ model Meeting {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   jobs      Job[]
+  transcriptSegments      TranscriptSegment[]
+}
+
+model TranscriptSegment {
+  id        String   @id @default(cuid())
+
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+
+  text      String
+
+  startTime Float
+  endTime   Float
+
+  speakerId String?
+
+  createdAt DateTime @default(now())
+
+  @@index([meetingId, startTime])
 }
 
 model Job {
   id        String    @id @default(cuid())
   meetingId String
   meeting   Meeting   @relation(fields: [meetingId], references: [id])
+
+  type      JobType
   status    JobStatus @default(PENDING)
   error     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([meetingId, type])
 }
