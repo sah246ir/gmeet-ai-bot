@@ -2,9 +2,9 @@ import { Pinecone as pc, type Pinecone, type RecordMetadata, type Index } from "
 import { ENV } from "../../lib/ENV.js"
 
 export type ChunkMetadata = {
+    id:string;
     meetingId: string;
     text: string;
-    transcriptId: string;
     startTime: number;
     endTime: number;
 }
@@ -39,19 +39,21 @@ export class PineconeService {
     }
 
     async upsertChunk(
-        id: string,
-        text: string,
-        metadata: ChunkMetadata
+        records: ChunkMetadata[]
     ) {
-        const embedding = await this.embed(text);
+        const embeddings:number[][] = []
+        for(let record of records){
+            const embedding = await this.embed(record.text);
+            embeddings.push(embedding)
+        }
         await this.index.upsert({
-            records:[
-                {
-                    metadata,
-                    id,
-                    values:embedding
+            records:records.map((rec,i)=>{
+                return {
+                    id:rec.id,
+                    metadata:rec,
+                    values:embeddings[i]!
                 }
-            ]
+            })
         })
 
     }
