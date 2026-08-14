@@ -4,12 +4,12 @@ import { ENV } from './ENV.js';
 import { initializeWebsocket } from './streamer.js';
 
 async function main() {
-    const consumer = initializeWebsocket(ENV.CONSUMER_URL);
+    const ws = initializeWebsocket(ENV.CONSUMER_URL);
     const meeting = await joinMeeting(ENV.MEETING_URL);
     const audioStream = startAudioCapture()
     let index = 0;
     audioStream.on('data', (data: Buffer)=>{
-        consumer.send(
+        ws.send(
             JSON.stringify({
                 type:"audio-transcribe-chunk",
                 data: data.toString('base64'),
@@ -18,7 +18,20 @@ async function main() {
             })
         )
     })
+    ws.onmessage = (async(event)=>{
+        const data = JSON.parse(event.data as string);
+        if(data.type=="meeting-end"){
+            await meeting.browser.close()
+            audioStream.destroy()
+            ws.send(
+                JSON.stringify({
+                    type: "audio-transcribe-end",
+                    meetingId: ENV.MEETING_ID,
+                })
+            );
+        }
+    })
     await waitUntilMeetingEnds(meeting)
-    consumer.close()
+    ws.close()
 }
 main().then(console.log).catch(console.error)
