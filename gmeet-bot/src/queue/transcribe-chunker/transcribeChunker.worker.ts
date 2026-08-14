@@ -1,6 +1,8 @@
 import { Worker } from 'bullmq';
 import { connection } from '../connection.js';
 import { prisma } from '../../lib/prisma.js';
+import { groupTranscripts } from '../../lib/group-transcripts.js';
+import { RagService } from '../../lib/rag.js';
 
 interface MeetingJoinJobData {
   meetingId: string;
@@ -15,6 +17,8 @@ export const transcribeChunkerWorker = new Worker<MeetingJoinJobData>(
         meetingId
       }
     })
+    const transcribe = groupTranscripts(transcripts,meetingId)
+    await RagService.pineconeService.upsertChunk(transcribe)
   },
   { connection },
 );
