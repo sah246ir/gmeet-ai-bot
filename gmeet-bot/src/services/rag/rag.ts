@@ -1,6 +1,6 @@
 import { QueryResponse } from "@pinecone-database/pinecone";
-import { LLMService } from "../llm/llm";
-import { ChunkMetadata, PineconeService } from "../pinecone/pinecone";
+import { LLMService } from "../llm/llm.js";
+import { ChunkMetadata, PineconeService } from "../pinecone/pinecone.js";
 
 export class RagService {
     private pineconeService: PineconeService;

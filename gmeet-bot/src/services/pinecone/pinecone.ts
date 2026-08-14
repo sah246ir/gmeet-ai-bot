@@ -1,5 +1,5 @@
 import { Pinecone as pc, type Pinecone, type RecordMetadata, type Index } from "@pinecone-database/pinecone"
-import { ENV } from "../../lib/ENV"
+import { ENV } from "../../lib/ENV.js"
 
 export type ChunkMetadata = {
     meetingId: string;

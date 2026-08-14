@@ -1,5 +1,5 @@
 import Groq from "groq-sdk";
-import { ENV } from "../../lib/ENV";
+import { ENV } from "../../lib/ENV.js";
 
 export class LLMService {
     private client: Groq;

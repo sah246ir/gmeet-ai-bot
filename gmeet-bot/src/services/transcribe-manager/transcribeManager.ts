@@ -1,4 +1,4 @@
-import { Deepgram } from "../deepgram/deepgram"
+import { Deepgram } from "../deepgram/deepgram.js"
 
 export class TranscribeManager {
     private clients: Map<string,Deepgram>

@@ -1,5 +1,5 @@
 import { DeepgramClient, listen } from "@deepgram/sdk"
-import { ENV } from "../../lib/ENV"
+import { ENV } from "../../lib/ENV.js"
 type DeepgramConnection = Awaited<
     ReturnType<DeepgramClient["listen"]["v1"]["connect"]>
 >;
