@@ -3,8 +3,8 @@ import { LLMService } from "../llm/llm.js";
 import { ChunkMetadata, PineconeService } from "../pinecone/pinecone.js";
 
 export class RagService {
-    private pineconeService: PineconeService;
-    private llmService: LLMService;
+    pineconeService: PineconeService;
+    llmService: LLMService;
 
     constructor() {
         this.pineconeService = new PineconeService();
