@@ -3,6 +3,7 @@ import { ENV } from "../../lib/ENV"
 
 export type ChunkMetadata = {
     meetingId: string;
+    text: string;
     transcriptId: string;
     startTime: number;
     endTime: number;
