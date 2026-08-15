@@ -8,6 +8,7 @@ export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
 
   wss.on('connection', (socket) => {
+    console.log("client connected")
     socket.on('message', async(data) => {
       const eventData = JSON.parse(data.toString())
       const parsedData = WSEventSchema.safeParse(eventData)
