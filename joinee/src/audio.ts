@@ -3,7 +3,7 @@ import { spawn } from "child_process";
 export function startAudioCapture() {
     const ffmpeg = spawn("ffmpeg", [
         "-f", "pulse",
-        "-i", "alsa_output....monitor",
+        "-i", "virtual_sink.monitor",
         "-ar", "16000",
         "-ac", "1",
         "-c:a", "pcm_s16le",      // Crucial: Explicitly define the codec
