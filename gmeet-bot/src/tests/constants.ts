@@ -8,6 +8,14 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698000,
     endTime: 1786698035,
     speakerId: "speaker_chef",
+    words: [
+      { word: "Alright,", speaker: 0 },
+      { word: "let's", speaker: 0 },
+      { word: "go", speaker: 0 },
+      { word: "through", speaker: 0 },
+      { word: "today's", speaker: 0 },
+      { word: "menu.", speaker: 0 },
+    ],
     createdAt: new Date("2026-08-14T09:00:35Z"),
   },
   {
@@ -17,6 +25,7 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698035,
     endTime: 1786698060,
     speakerId: "speaker_manager",
+    words: null,
     createdAt: new Date("2026-08-14T09:01:00Z"),
   },
   {
@@ -26,6 +35,14 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698060,
     endTime: 1786698095,
     speakerId: "speaker_chef",
+    words: [
+      { word: "The", speaker: 0 },
+      { word: "mushroom", speaker: 0 },
+      { word: "risotto", speaker: 0 },
+      { word: "is", speaker: 0 },
+      { word: "going", speaker: 0 },
+      { word: "ahead.", speaker: 0 },
+    ],
     createdAt: new Date("2026-08-14T09:01:35Z"),
   },
   {
@@ -35,6 +52,14 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698095,
     endTime: 1786698110,
     speakerId: "speaker_server",
+    words: [
+      { word: "Why", speaker: 2 },
+      { word: "are", speaker: 2 },
+      { word: "we", speaker: 2 },
+      { word: "pushing", speaker: 2 },
+      { word: "the", speaker: 2 },
+      { word: "risotto?", speaker: 2 },
+    ],
     createdAt: new Date("2026-08-14T09:01:50Z"),
   },
   {
@@ -44,6 +69,15 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698110,
     endTime: 1786698145,
     speakerId: "speaker_manager",
+    words: [
+      { word: "The", speaker: 1 },
+      { word: "pasta", speaker: 1 },
+      { word: "is", speaker: 1 },
+      { word: "good,", speaker: 1 },
+      { word: "but", speaker: 1 },
+      { word: "we're", speaker: 1 },
+      { word: "low.", speaker: 1 },
+    ],
     createdAt: new Date("2026-08-14T09:02:25Z"),
   },
   {
@@ -53,6 +87,14 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698145,
     endTime: 1786698155,
     speakerId: "speaker_server",
+    words: [
+      { word: "Any", speaker: 2 },
+      { word: "allergy", speaker: 2 },
+      { word: "concerns", speaker: 2 },
+      { word: "with", speaker: 2 },
+      { word: "the", speaker: 2 },
+      { word: "risotto?", speaker: 2 },
+    ],
     createdAt: new Date("2026-08-14T09:02:35Z"),
   },
   {
@@ -62,6 +104,13 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698155,
     endTime: 1786698195,
     speakerId: "speaker_chef",
+    words: [
+      { word: "The", speaker: 0 },
+      { word: "standard", speaker: 0 },
+      { word: "version", speaker: 0 },
+      { word: "contains", speaker: 0 },
+      { word: "dairy.", speaker: 0 },
+    ],
     createdAt: new Date("2026-08-14T09:03:15Z"),
   },
   {
@@ -71,6 +120,13 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698195,
     endTime: 1786698225,
     speakerId: "speaker_manager",
+    words: [
+      { word: "We", speaker: 1 },
+      { word: "also", speaker: 1 },
+      { word: "have", speaker: 1 },
+      { word: "two", speaker: 1 },
+      { word: "guests.", speaker: 1 },
+    ],
     createdAt: new Date("2026-08-14T09:03:45Z"),
   },
   {
@@ -80,6 +136,15 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698225,
     endTime: 1786698260,
     speakerId: "speaker_chef",
+    words: [
+      { word: "We're", speaker: 0 },
+      { word: "also", speaker: 0 },
+      { word: "nearly", speaker: 0 },
+      { word: "out", speaker: 0 },
+      { word: "of", speaker: 0 },
+      { word: "chicken", speaker: 0 },
+      { word: "stock.", speaker: 0 },
+    ],
     createdAt: new Date("2026-08-14T09:04:20Z"),
   },
   {
@@ -89,6 +154,13 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698260,
     endTime: 1786698270,
     speakerId: "speaker_manager",
+    words: [
+      { word: "What's", speaker: 1 },
+      { word: "happening", speaker: 1 },
+      { word: "with", speaker: 1 },
+      { word: "the", speaker: 1 },
+      { word: "leak?", speaker: 1 },
+    ],
     createdAt: new Date("2026-08-14T09:04:30Z"),
   },
   {
@@ -98,6 +170,13 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698270,
     endTime: 1786698310,
     speakerId: "speaker_chef",
+    words: [
+      { word: "There's", speaker: 0 },
+      { word: "still", speaker: 0 },
+      { word: "a", speaker: 0 },
+      { word: "small", speaker: 0 },
+      { word: "leak.", speaker: 0 },
+    ],
     createdAt: new Date("2026-08-14T09:05:10Z"),
   },
   {
@@ -107,6 +186,14 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698310,
     endTime: 1786698320,
     speakerId: "speaker_server",
+    words: [
+      { word: "Are", speaker: 2 },
+      { word: "we", speaker: 2 },
+      { word: "still", speaker: 2 },
+      { word: "serving", speaker: 2 },
+      { word: "seafood", speaker: 2 },
+      { word: "pasta?", speaker: 2 },
+    ],
     createdAt: new Date("2026-08-14T09:05:20Z"),
   },
   {
@@ -116,6 +203,17 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698320,
     endTime: 1786698360,
     speakerId: "speaker_chef",
+    words: [
+      { word: "Yes,", speaker: 0 },
+      { word: "but", speaker: 0 },
+      { word: "only", speaker: 0 },
+      { word: "until", speaker: 0 },
+      { word: "we", speaker: 0 },
+      { word: "run", speaker: 0 },
+      { word: "out", speaker: 0 },
+      { word: "of", speaker: 0 },
+      { word: "prawns.", speaker: 0 },
+    ],
     createdAt: new Date("2026-08-14T09:06:00Z"),
   },
   {
@@ -125,6 +223,14 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698360,
     endTime: 1786698400,
     speakerId: "speaker_manager",
+    words: [
+      { word: "The", speaker: 1 },
+      { word: "risotto", speaker: 1 },
+      { word: "is", speaker: 1 },
+      { word: "the", speaker: 1 },
+      { word: "main", speaker: 1 },
+      { word: "dish.", speaker: 1 },
+    ],
     createdAt: new Date("2026-08-14T09:06:40Z"),
   },
   {
@@ -134,6 +240,13 @@ export const meetingTranscript:TranscriptSegment[] = [
     startTime: 1786698400,
     endTime: 1786698430,
     speakerId: "speaker_server",
+    words: [
+      { word: "Okay,", speaker: 2 },
+      { word: "I'll", speaker: 2 },
+      { word: "update", speaker: 2 },
+      { word: "the", speaker: 2 },
+      { word: "team.", speaker: 2 },
+    ],
     createdAt: new Date("2026-08-14T09:07:10Z"),
   },
 ];
