@@ -43,6 +43,7 @@ model TranscriptSegment {
   endTime   Float
 
   speakerId String?
+  words     Json?
 
   createdAt DateTime @default(now())
 
