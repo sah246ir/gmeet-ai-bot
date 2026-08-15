@@ -5,6 +5,7 @@ import { initializeWebsocket } from './streamer.js';
 
 async function main() {
     const ws = initializeWebsocket(ENV.CONSUMER_URL);
+    console.log("initializeWebsocket")
     const meeting = await joinMeeting(ENV.MEETING_URL);
     const audioStream = startAudioCapture()
     let index = 0;
