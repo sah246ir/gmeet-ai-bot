@@ -3,6 +3,16 @@ import { ENV } from "../../lib/ENV.js"
 type DeepgramConnection = Awaited<
     ReturnType<DeepgramClient["listen"]["v1"]["connect"]>
 >;
+export interface DeepgramWord {
+    word: string;
+    start: number;
+    end: number;
+    confidence: number;
+    language?: string;
+    punctuated_word?: string;
+    speaker?: number;
+}
+
 export interface TranscriptEvent {
     meetingId: string;
     text: string;
@@ -10,7 +20,7 @@ export interface TranscriptEvent {
     speechFinal: boolean;
     start: number;
     duration: number;
-    words: any[];
+    words: DeepgramWord[];
 }
 
 type TranscriptHandler = (event: TranscriptEvent) => void;
