@@ -32,6 +32,13 @@ async function main() {
         }
     })
     await waitUntilMeetingEnds(meeting)
+    audioStream.destroy()
+    ws.send(
+        JSON.stringify({
+            type:"audio-transcribe-end",
+            meetingId: ENV.MEETING_ID,
+        })
+    )
     ws.close()
 }
 main().then(console.log).catch(console.error)
