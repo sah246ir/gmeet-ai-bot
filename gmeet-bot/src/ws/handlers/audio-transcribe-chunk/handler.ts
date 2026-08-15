@@ -8,18 +8,18 @@ export const audioTranscribeChunkHandler = async (event:AudioTranscribeChunkSche
         client = await TranscribeManager.createInstance(event.meetingId)
         client.onTranscript(async(event)=>{
             if(!event.isFinal) return
-            await prisma.transcriptSegment.create({
-                data:{
-                    meetingId:event.meetingId,
-                    startTime:event.start,
-                    endTime:event.start + event.duration,
-                    text:event.text,
-                }
-            })
+            console.log(event.text)
+            // await prisma.transcriptSegment.create({
+            //     data:{
+            //         meetingId:event.meetingId,
+            //         startTime:event.start,
+            //         endTime:event.start + event.duration,
+            //         text:event.text,
+            //     }
+            // })
             
         })
     }
 
     await client.sendAudio(Buffer.from(event.data, "base64"))
-    
 }
