@@ -91,7 +91,33 @@ export async function joinMeeting(meetingUrl: string) {
         page,
     };
 }
-export async function waitUntilMeetingEnds({ page, browser }: { page: Page, browser: Browser }) {
-    await page.waitForEvent("close");
+export async function waitUntilMeetingEnds({
+    page,
+    browser,
+}: {
+    page: Page;
+    browser: Browser;
+}) {
+    console.log("Waiting for meeting to end...");
+
+    while (true) {
+        if (page.isClosed()) {
+            console.log("Page closed");
+            break;
+        }
+
+        const bodyText = await page.locator("body").innerText().catch(() => "");
+
+        if (
+            bodyText.includes("You left the meeting") ||
+            bodyText.includes("The meeting has ended")
+        ) {
+            console.log("Meeting ended");
+            break;
+        }
+
+        await page.waitForTimeout(5000);
+    }
+
     await browser.close();
 }
