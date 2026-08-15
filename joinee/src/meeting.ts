@@ -31,7 +31,7 @@ export async function joinMeeting(meetingUrl: string) {
     });
     await page.waitForTimeout(5000)
     await page.waitForTimeout(5000)
-    
+
     const joinNow = page.getByText('Join now', { exact: true });
     const askToJoin = page.getByText('Ask to join', { exact: true });
     const continueWithoutMedia = page.getByRole("button", {
@@ -108,11 +108,18 @@ export async function waitUntilMeetingEnds({
 
         const bodyText = await page.locator("body").innerText().catch(() => "");
 
+        const removedMessage = await page
+            .locator("h1")
+            .filter({ hasText: "You've been removed from the meeting" })
+            .isVisible()
+            .catch(() => false);
+
         if (
             bodyText.includes("You left the meeting") ||
-            bodyText.includes("The meeting has ended")
+            bodyText.includes("The meeting has ended") ||
+            removedMessage
         ) {
-            console.log("Meeting ended");
+            console.log("Meeting ended/removed");
             break;
         }
 
