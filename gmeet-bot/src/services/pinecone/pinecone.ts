@@ -7,6 +7,7 @@ export type ChunkMetadata = {
     text: string;
     startTime: number;
     endTime: number;
+    words: string;
 }
 export class PineconeService {
     private index: Index<ChunkMetadata>
