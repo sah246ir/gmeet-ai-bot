@@ -35,7 +35,6 @@ export class Deepgram {
             encoding: "linear16",
             sample_rate: 16000,
             channels: 1,
-
         });
         this.registerListeners(connection)
         connection.connect()
@@ -62,7 +61,6 @@ export class Deepgram {
         connection?.on("message", (data ) => {
             if (data.type !== "Results") return;
             const alt = data.channel.alternatives[0];
-            console.log(alt)
 
             if (!alt.transcript?.trim()) return;
 
