@@ -27,9 +27,36 @@ export class RagService {
     async buildContext(matchResult:QueryResponse<ChunkMetadata>){
         return matchResult.matches.map((m)=>{
             const meta = m.metadata
+
+            let words: { word: string; speaker?: number }[] = []
+            try {
+                words = meta?.words ? JSON.parse(meta.words) : []
+            } catch {
+                words = []
+            }
+
+            const speakerLines: string[] = []
+            let currentSpeaker: number | undefined
+            let currentLine: string[] = []
+            for (const w of words) {
+                if (w.speaker !== currentSpeaker) {
+                    if (currentLine.length > 0) {
+                        speakerLines.push(`Speaker ${currentSpeaker ?? "unknown"}: ${currentLine.join(" ")}`)
+                    }
+                    currentSpeaker = w.speaker
+                    currentLine = []
+                }
+                currentLine.push(w.word)
+            }
+            if (currentLine.length > 0) {
+                speakerLines.push(`Speaker ${currentSpeaker ?? "unknown"}: ${currentLine.join(" ")}`)
+            }
+
+            const speakerBlock = speakerLines.length > 0 ? `\nSpeakers:\n${speakerLines.join("\n")}` : ""
+
             return `
 [${meta?.startTime}s - ${meta?.endTime}s]
-${meta?.text}
+${meta?.text}${speakerBlock}
 `;
         }).join("\n\n")
     }
