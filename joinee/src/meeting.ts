@@ -24,22 +24,52 @@ export async function joinMeeting(meetingUrl: string) {
     });
 
     const page = await context.newPage()
-    // context.grantPermissions(["microphone"])
-    page.goto(meetingUrl) 
+
+    await page.goto(meetingUrl, {
+        waitUntil: "domcontentloaded",
+        timeout: 30000,
+    });
     await page.waitForTimeout(5000)
     await page.waitForTimeout(5000)
-    if (await page.getByText('Join now').count()) {
-        await page.getByText('Join now').click()
+    
+    const joinNow = page.getByText('Join now', { exact: true });
+    const askToJoin = page.getByText('Ask to join', { exact: true });
+    const continueWithoutMedia = page.getByRole("button", {
+        name: "Continue without microphone and camera",
+    });
+
+    if (await continueWithoutMedia.isVisible().catch(() => false)) {
+        console.log("Media permission dialog detected");
+        await continueWithoutMedia.click();
+        console.log("Media dialog dismissed");
     }
-    else if (await page.getByText('Ask to join').count()) {
-        await page.getByText('Ask to join').click()
+
+    try {
+        await joinNow.waitFor({
+            state: 'visible',
+            timeout: 15000,
+        });
+
+        console.log('Found Join now');
+        await joinNow.click();
+
+    } catch {
+        console.log('Join now not found, looking for Ask to join');
+
+        await askToJoin.waitFor({
+            state: 'visible',
+            timeout: 15000,
+        });
+
+        console.log('Found Ask to join');
+        await askToJoin.click();
     }
     await page.waitForTimeout(5000)
     await page.waitForTimeout(5000)
     await page.press("body", "c")
     page.on('console', msg => {
         console.log('BROWSER:', msg.text());
-      });
+    });
     // await page.evaluate(()=>{
     //     const seen = new Set()
     //     const observer = new MutationObserver(()=>{
