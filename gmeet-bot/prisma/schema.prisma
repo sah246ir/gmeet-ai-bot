@@ -29,6 +29,11 @@ model Meeting {
   updatedAt DateTime  @updatedAt
   jobs      Job[]
   transcriptSegments      TranscriptSegment[]
+
+  sessionToken String
+  session      Session  @relation(fields: [sessionToken], references: [token])
+
+  @@index([sessionToken])
 }
 
 model TranscriptSegment {
@@ -54,6 +59,7 @@ model Session {
   token     String   @id
   createdAt DateTime @default(now())
   expiresAt DateTime
+  meetings  Meeting[]
 }
 
 model Job {
