@@ -3,7 +3,14 @@ import { prisma } from "../../../lib/prisma.js";
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 2;
 
-export async function createSession() {
+export async function createSession(existingToken?: string) {
+    if (existingToken) {
+        const existing = await validateSession(existingToken);
+        if (existing) {
+            return { token: existing.token, expiresAt: existing.expiresAt };
+        }
+    }
+
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
 

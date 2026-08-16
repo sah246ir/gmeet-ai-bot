@@ -1,9 +1,13 @@
-import type { RequestHandler } from "express";
+import type { Request, RequestHandler } from "express";
 import { validateSession } from "../modules/session/session.service.js";
 
-export const requireSession: RequestHandler = async (req, res, next) => {
+export function extractBearerToken(req: Request): string | undefined {
     const header = req.headers.authorization;
-    const token = header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
+    return header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : undefined;
+}
+
+export const requireSession: RequestHandler = async (req, res, next) => {
+    const token = extractBearerToken(req);
 
     if (!token) {
         return void res.status(401).json({ error: "unauthorized" });
