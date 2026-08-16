@@ -20,20 +20,42 @@ enum JobType {
   GENERATE_SUMMARY
   EXTRACT_ACTION_ITEMS
 }
+enum MeetingStatus {
+  STARTING
+  CREATING_JOINEE_BOT
+  JOINING_MEETING
+  PROCESSING_MEETING
+  COMPLETED
+  FAILED
+}
 
 model Meeting {
   id        String    @id @default(cuid())
   url       String
-  status    JobStatus @default(PENDING)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   jobs      Job[]
   transcriptSegments      TranscriptSegment[]
+  statusLogs MeetingStatusLog[]
 
   sessionToken String
   session      Session  @relation(fields: [sessionToken], references: [token])
 
   @@index([sessionToken])
+}
+
+model MeetingStatusLog {
+  id        String        @id @default(cuid())
+
+  meetingId String
+  meeting   Meeting       @relation(fields: [meetingId], references: [id])
+
+  status    MeetingStatus
+  error     String?
+
+  createdAt DateTime      @default(now())
+
+  @@index([meetingId, createdAt])
 }
 
 model TranscriptSegment {
