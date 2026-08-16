@@ -6,5 +6,9 @@ export const ENV = {
     groqApiKey: process.env.GROQ_KEY as string,
     pineconeIndex: process.env.PINECONE_INDEX as string,
     redisUrl: process.env.REDIS_URL as string,
-    port: process.env.PORT as string
+    port: process.env.PORT as string,
+    consumerUrl: process.env.CONSUMER_URL as string,
+    dockerVersion: process.env.DOCKER_VERSION as string,
+    useDocker: process.env.USE_DOCKER === "1",
+    dockerImage: process.env.DOCKER_IMAGE as string
 }
