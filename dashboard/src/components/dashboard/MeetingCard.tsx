@@ -38,7 +38,7 @@ export function MeetingCard(props: MeetingCardProps) {
         <div className="flex items-center justify-between">
           <span className="text-xs text-white/40">{durationLabel}</span>
           <div className="flex items-center gap-2">
-            <Link to={`/meetings/${id}`}>
+            <Link to={`/meeting/${id}`}>
               <Button type="button" variant="ghost" className="!px-3 !py-1.5 text-xs">
                 Open
               </Button>
@@ -70,7 +70,7 @@ export function MeetingCard(props: MeetingCardProps) {
       <div className="flex items-center justify-between">
         <span className="text-xs text-white/35">{chunksLabel ?? ''}</span>
         <Link
-          to={`/meetings/${id}`}
+          to={`/meeting/${id}`}
           className="inline-flex items-center gap-1 text-xs font-medium text-sky-400 transition-colors duration-200 hover:text-sky-300"
         >
           Open meeting <span aria-hidden="true">→</span>
