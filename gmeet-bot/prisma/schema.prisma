@@ -50,6 +50,12 @@ model TranscriptSegment {
   @@index([meetingId, startTime])
 }
 
+model Session {
+  token     String   @id
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
 model Job {
   id        String    @id @default(cuid())
   meetingId String
