@@ -7,9 +7,9 @@ function parseWords(raw: TranscriptSegment["words"]): PersistedWord[] {
     return Array.isArray(raw) ? (raw as unknown as PersistedWord[]) : [];
 }
 
-export function groupTranscripts(segments: TranscriptSegment[], meetingId: string) {
+export function groupTranscripts(segments: TranscriptSegment[], meetingId: string, sessionToken: string) {
     const chunks: ChunkMetadata[] = [];
-    let buffer: (Omit<ChunkMetadata,"id"|"words"> & { words: PersistedWord[] })[] = [];
+    let buffer: (Omit<ChunkMetadata,"id"|"words"|"sessionToken"> & { words: PersistedWord[] })[] = [];
     let chunkIndex = 0;
 
     for (const segment of segments) {
@@ -29,6 +29,7 @@ export function groupTranscripts(segments: TranscriptSegment[], meetingId: strin
                 meetingId: segment.meetingId,
                 startTime: buffer[0]?.startTime,
                 words: JSON.stringify(buffer.flatMap(s => s.words)),
+                sessionToken,
             });
 
             buffer = [];
@@ -43,6 +44,7 @@ export function groupTranscripts(segments: TranscriptSegment[], meetingId: strin
             meetingId: meetingId,
             startTime: buffer[0]?.startTime,
             words: JSON.stringify(buffer.flatMap(s => s.words)),
+            sessionToken,
         });
     }
 

@@ -4,6 +4,7 @@ import { ENV } from "../../lib/ENV.js"
 export type ChunkMetadata = {
     id:string;
     meetingId: string;
+    sessionToken: string;
     text: string;
     startTime: number;
     endTime: number;
