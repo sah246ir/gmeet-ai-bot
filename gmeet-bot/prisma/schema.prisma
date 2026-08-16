@@ -32,6 +32,7 @@ enum MeetingStatus {
 model Meeting {
   id        String    @id @default(cuid())
   url       String
+  containerId       String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   jobs      Job[]
