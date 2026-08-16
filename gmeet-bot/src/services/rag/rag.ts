@@ -13,7 +13,20 @@ export class RagService {
 
     async ask(meetingId: string, question: string) {
         const results = await this.pineconeService.search(
-            meetingId,
+            { meetingId },
+            question
+        );
+        const context = await this.buildContext(results)
+        const llmResponse = await this.llmService.answer(
+            question,
+            context
+        )
+        return llmResponse
+    }
+
+    async askSession(sessionToken: string, question: string) {
+        const results = await this.pineconeService.search(
+            { sessionToken },
             question
         );
         const context = await this.buildContext(results)

@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { meetingQuerySchema, meetingIdParamsSchema } from "./ai.schema.js";
-import { queryMeeting } from "./ai.service.js";
+import { queryMeeting, querySession } from "./ai.service.js";
 
 export async function queryMeetingHandler(req: Request, res: Response) {
     const params = meetingIdParamsSchema.safeParse(req.params);
@@ -21,5 +21,16 @@ export async function queryMeetingHandler(req: Request, res: Response) {
         return void res.status(404).json({ error: "not found" });
     }
 
+    res.json(result);
+}
+
+export async function querySessionHandler(req: Request, res: Response) {
+    const body = meetingQuerySchema.safeParse(req.body);
+
+    if (!body.success) {
+        return void res.status(400).json({ error: "invalid body", details: body.error.flatten() });
+    }
+
+    const result = await querySession(req.sessionToken!, body.data.question);
     res.json(result);
 }

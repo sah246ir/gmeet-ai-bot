@@ -60,18 +60,15 @@ export class PineconeService {
 
     }
 
-    async search(meetingId: string, q: string){
+    async search(filter: Partial<Pick<ChunkMetadata, "meetingId" | "sessionToken">>, q: string){
         const embedding = await this.embed(q);
         const matches = await this.index.query({
             vector:embedding,
             topK:5,
             includeMetadata:true,
-            filter:{
-                meetingId:{
-                    $eq:meetingId
-                }
-            }
-
+            filter: Object.fromEntries(
+                Object.entries(filter).map(([k, v]) => [k, { $eq: v }])
+            ),
         })
         return matches
     }

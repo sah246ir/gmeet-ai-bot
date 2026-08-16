@@ -11,3 +11,8 @@ export async function queryMeeting(meetingId: string, sessionToken: string, ques
     const answer = await RagService.ask(meetingId, question);
     return { answer };
 }
+
+export async function querySession(sessionToken: string, question: string) {
+    const answer = await RagService.askSession(sessionToken, question);
+    return { answer };
+}
