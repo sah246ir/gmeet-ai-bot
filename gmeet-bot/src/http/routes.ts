@@ -28,7 +28,7 @@ router.post('/meetings', requireSession, async (req, res) => {
 router.get('/meetings/:id', requireSession, async (req: Request<{ id: string }>, res: Response) => {
   const meeting = await prisma.meeting.findUnique({
     where: { id: req.params.id },
-    include: { jobs: true },
+    include: { jobs: true, statusLogs: { orderBy: { createdAt: 'desc' } } },
   });
 
   if (!meeting) {
