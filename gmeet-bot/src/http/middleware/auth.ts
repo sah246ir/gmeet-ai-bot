@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { sessionService } from "../../services/session/session.js";
+import { validateSession } from "../modules/session/session.service.js";
 
 export const requireSession: RequestHandler = async (req, res, next) => {
     const header = req.headers.authorization;
@@ -9,11 +9,12 @@ export const requireSession: RequestHandler = async (req, res, next) => {
         return void res.status(401).json({ error: "unauthorized" });
     }
 
-    const session = await sessionService.validateSession(token);
+    const session = await validateSession(token);
 
     if (!session) {
         return void res.status(401).json({ error: "unauthorized" });
     }
 
+    req.sessionToken = session.token;
     next();
 }

@@ -1,11 +1,20 @@
 import express from 'express';
-import { router } from './routes.js';
+import { sessionRouter } from './modules/session/session.routes.js';
+import { meetingRouter } from './modules/meeting/meeting.routes.js';
+import { aiRouter } from './modules/ai/ai.routes.js';
 
 export function createApp() {
   const app = express();
 
   app.use(express.json());
-  app.use(router);
+
+  app.get('/health', (_req, res) => {
+    res.json({ status: 'ok' });
+  });
+
+  app.use(sessionRouter);
+  app.use(meetingRouter);
+  app.use(aiRouter);
 
   return app;
 }
