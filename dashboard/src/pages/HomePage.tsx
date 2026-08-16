@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { Container } from '../components/ui/Container'
 import { Navbar } from '../components/Navbar'
 import { ProductVisual } from './home/ProductVisual'
 import { MeetingInputCard } from './home/MeetingInputCard'
+import { createSession } from '../services/session/session.service'
 
 function BackgroundGlow() {
   return (
@@ -12,6 +14,10 @@ function BackgroundGlow() {
 }
 
 export function HomePage() {
+  useEffect(() => {
+    createSession().catch(() => {})
+  }, [])
+
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
       <BackgroundGlow />
