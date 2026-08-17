@@ -29,11 +29,22 @@ export async function joinMeeting(meetingUrl: string) {
         waitUntil: "domcontentloaded",
         timeout: 30000,
     });
-    await page.waitForTimeout(5000)
-    await page.waitForTimeout(5000)
 
     const joinNow = page.getByText('Join now', { exact: true });
     const askToJoin = page.getByText('Ask to join', { exact: true });
+
+    try {
+        await Promise.race([
+            joinNow.waitFor({ state: "visible", timeout: 15000 }),
+            askToJoin.waitFor({ state: "visible", timeout: 15000 }),
+        ]);
+    } catch {
+        throw new Error(
+            "Neither 'Join now' nor 'Ask to join' appeared within 15 seconds"
+        );
+    }
+    
+
     const continueWithoutMedia = page.getByRole("button", {
         name: "Continue without microphone and camera",
     });
@@ -44,32 +55,17 @@ export async function joinMeeting(meetingUrl: string) {
         console.log("Media dialog dismissed");
     }
 
-    try {
-        await joinNow.waitFor({
-            state: 'visible',
-            timeout: 15000,
-        });
-
-        console.log('Found Join now');
+    if (await joinNow.isVisible()) {
+        console.log("Found Join now");
         await joinNow.click();
-
-    } catch {
-        console.log('Join now not found, looking for Ask to join');
-
-        await askToJoin.waitFor({
-            state: 'visible',
-            timeout: 15000,
-        });
-
-        console.log('Found Ask to join');
+    } else if (await askToJoin.isVisible()) {
+        console.log("Found Ask to join");
         await askToJoin.click();
+    } else {
+        throw new Error(
+            "Join button disappeared before it could be clicked"
+        );
     }
-    await page.waitForTimeout(5000)
-    await page.waitForTimeout(5000)
-    await page.press("body", "c")
-    page.on('console', msg => {
-        console.log('BROWSER:', msg.text());
-    });
     // await page.evaluate(()=>{
     //     const seen = new Set()
     //     const observer = new MutationObserver(()=>{
