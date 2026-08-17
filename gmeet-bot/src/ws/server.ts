@@ -3,6 +3,8 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { WSEventSchema } from './handlers/schema';
 import { audioTranscribeChunkHandler } from './handlers/audio-transcribe-chunk/handler';
 import { audioTranscribeEndHandler } from './handlers/audio-transcribe-end/handler';
+import { meetingJoiningHandler } from './handlers/meeting-joining/handler';
+import { meetingJoinedHandler } from './handlers/meeting-joined/handler';
 
 export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
@@ -24,6 +26,12 @@ export function attachWebSocketServer(httpServer: HttpServer) {
           break
         case "audio-transcribe-end":
           await audioTranscribeEndHandler(finaldata)
+          break
+        case "meeting-joining":
+          await meetingJoiningHandler(finaldata)
+          break
+        case "meeting-joined":
+          await meetingJoinedHandler(finaldata)
           break
         default:
 

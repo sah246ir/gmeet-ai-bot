@@ -23,7 +23,6 @@ export async function createMeeting(sessionToken: string, url: string) {
         });
 
         await setMeetingContainerId(meeting.id, containerId);
-        await addMeetingStatusLog(meeting.id, MeetingStatus.JOINING_MEETING);
     } catch (error) {
         await addMeetingStatusLog(
             meeting.id,
