@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import { Container } from '../components/ui/Container'
@@ -46,84 +46,14 @@ export function MeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>()
   const seed = useMemo(() => resolveMeetingDetail(meetingId ?? ''), [meetingId])
 
-  const [status, setStatus] = useState<MeetingLifecycleStatus>(seed.initialStatus)
-  const [elapsedSeconds, setElapsedSeconds] = useState(seed.initialElapsedSeconds)
-  const [segmentCount, setSegmentCount] = useState(seed.initialSegmentCount)
-  const [segments, setSegments] = useState<TranscriptSegment[]>(() => initialSegmentsFor(seed.initialStatus))
-  const [transcriptState, setTranscriptState] = useState<TranscriptState>(() =>
-    initialTranscriptStateFor(seed.initialStatus),
-  )
-  const [summaryState, setSummaryState] = useState<SummaryState>(() =>
-    initialSummaryStateFor(seed.initialStatus),
-  )
+  const status = seed.initialStatus
+  const elapsedSeconds = seed.initialElapsedSeconds
+  const segmentCount = seed.initialSegmentCount
+  const segments = initialSegmentsFor(seed.initialStatus)
+  const transcriptState = initialTranscriptStateFor(seed.initialStatus)
+  const summaryState = initialSummaryStateFor(seed.initialStatus)
+
   const [endDialogOpen, setEndDialogOpen] = useState(false)
-
-  const streamingRef = useRef(false)
-
-  useEffect(() => {
-    if (status !== 'recording') return
-    const interval = window.setInterval(() => setElapsedSeconds((s) => s + 1), 1000)
-    return () => window.clearInterval(interval)
-  }, [status])
-
-  useEffect(() => {
-    if (status !== 'joining') return
-    const timer = window.setTimeout(() => {
-      setStatus('recording')
-      setTranscriptState('ready')
-    }, 2600)
-    return () => window.clearTimeout(timer)
-  }, [status])
-
-  useEffect(() => {
-    if (status !== 'recording') return
-    if (segments.length >= MOCK_TRANSCRIPT_SEGMENTS.length) return
-    if (streamingRef.current) return
-
-    streamingRef.current = true
-    const timer = window.setTimeout(() => {
-      streamingRef.current = false
-      setSegments((prev) => {
-        const next = MOCK_TRANSCRIPT_SEGMENTS[prev.length]
-        return next ? [...prev, next] : prev
-      })
-      setSegmentCount((count) => count + 1)
-    }, 2200)
-    return () => {
-      streamingRef.current = false
-      window.clearTimeout(timer)
-    }
-  }, [status, segments])
-
-  function handleEndMeeting() {
-    setEndDialogOpen(false)
-    setStatus('processing')
-    setSummaryState('processing')
-    window.setTimeout(() => {
-      setStatus('completed')
-      setSummaryState('completed')
-      setTranscriptState('ready')
-    }, 2600)
-  }
-
-  function handleRetryStatus() {
-    setStatus('processing')
-    setSummaryState('processing')
-    window.setTimeout(() => {
-      setStatus('completed')
-      setSummaryState('completed')
-      setTranscriptState('ready')
-    }, 2200)
-  }
-
-  function handleRetrySummary() {
-    setSummaryState('processing')
-    window.setTimeout(() => setSummaryState('completed'), 1800)
-  }
-
-  function handleRetryTranscript() {
-    setTranscriptState('ready')
-  }
 
   const hasEnded = status === 'completed' || status === 'processing'
 
@@ -151,7 +81,6 @@ export function MeetingDetailPage() {
               status={status}
               elapsedLabel={`${formatElapsed(elapsedSeconds)} elapsed`}
               segmentLabel={`${segmentCount} transcript segment${segmentCount === 1 ? '' : 's'}`}
-              onRetry={handleRetryStatus}
             />
           </div>
 
@@ -173,7 +102,6 @@ export function MeetingDetailPage() {
                   state={transcriptState}
                   segments={segments}
                   isLive={status === 'recording'}
-                  onRetry={handleRetryTranscript}
                 />
               </div>
             </div>
@@ -181,7 +109,7 @@ export function MeetingDetailPage() {
             <div className="lg:col-span-1">
               <SectionHeader title="Meeting Summary" />
               <div className="mt-6">
-                <MeetingSummary state={summaryState} summary={MOCK_SUMMARY} onRetry={handleRetrySummary} />
+                <MeetingSummary state={summaryState} summary={MOCK_SUMMARY} />
               </div>
             </div>
           </div>
@@ -195,7 +123,7 @@ export function MeetingDetailPage() {
         confirmLabel="End Meeting"
         cancelLabel="Cancel"
         destructive
-        onConfirm={handleEndMeeting}
+        onConfirm={() => setEndDialogOpen(false)}
         onCancel={() => setEndDialogOpen(false)}
       />
     </div>
