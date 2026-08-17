@@ -1,5 +1,26 @@
 import { Browser, chromium, Page } from "playwright";
 
+async function dismissMediaDialog(page: Page) {
+    const button = page.getByRole("button", {
+        name: "Continue without microphone and camera",
+    });
+
+    try {
+        await button.waitFor({
+            state: "visible",
+            timeout: 3000,
+        });
+
+        console.log("Media dialog detected");
+        await button.click();
+        console.log("Media dialog dismissed");
+
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export async function joinMeeting(meetingUrl: string) {
     console.log("MEETING_URL =", meetingUrl);
     const browser = await chromium.launch({
@@ -29,43 +50,35 @@ export async function joinMeeting(meetingUrl: string) {
         waitUntil: "domcontentloaded",
         timeout: 30000,
     });
+    await dismissMediaDialog(page);
 
     const joinNow = page.getByText('Join now', { exact: true });
     const askToJoin = page.getByText('Ask to join', { exact: true });
 
     try {
-        await Promise.race([
-            joinNow.waitFor({ state: "visible", timeout: 15000 }),
-            askToJoin.waitFor({ state: "visible", timeout: 15000 }),
-        ]);
-    } catch {
-        throw new Error(
-            "Neither 'Join now' nor 'Ask to join' appeared within 15 seconds"
-        );
-    }
-    
+        await joinNow.waitFor({
+            state: 'visible',
+            timeout: 15000,
+        });
 
-    const continueWithoutMedia = page.getByRole("button", {
-        name: "Continue without microphone and camera",
-    });
-
-    if (await continueWithoutMedia.isVisible().catch(() => false)) {
-        console.log("Media permission dialog detected");
-        await continueWithoutMedia.click();
-        console.log("Media dialog dismissed");
-    }
-
-    if (await joinNow.isVisible()) {
-        console.log("Found Join now");
+        console.log('Found Join now');
         await joinNow.click();
-    } else if (await askToJoin.isVisible()) {
-        console.log("Found Ask to join");
+
+    } catch {
+        console.log('Join now not found, looking for Ask to join');
+
+        await askToJoin.waitFor({
+            state: 'visible',
+            timeout: 15000,
+        });
+
+        console.log('Found Ask to join');
         await askToJoin.click();
-    } else {
-        throw new Error(
-            "Join button disappeared before it could be clicked"
-        );
     }
+    await page.press("body", "c")
+    page.on('console', msg => {
+        console.log('BROWSER:', msg.text());
+    });
     // await page.evaluate(()=>{
     //     const seen = new Set()
     //     const observer = new MutationObserver(()=>{
