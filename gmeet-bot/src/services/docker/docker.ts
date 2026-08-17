@@ -48,9 +48,6 @@ export class DockerService {
         const inspectResponse = await this.client.get(`/containers/${containerId}/json`);
         const containerIP = inspectResponse.data.NetworkSettings.IPAddress as string;
 
-        if (waitForReady) {
-            await this.waitForReachable(`http://${containerIP}:8080/files`, 5000);
-        }
 
         this.containers.set(meetingId, containerId);
 
