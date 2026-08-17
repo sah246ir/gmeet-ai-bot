@@ -1,7 +1,7 @@
 import { prisma } from "../../../lib/prisma.js";
 import { MeetingStatus } from "@prisma/client";
 import { dockerService } from "../../../services/docker/docker.js";
-import { broadcast } from "../../..";
+import { broadcast } from "../../../index.js";
 
 export async function createMeeting(sessionToken: string, url: string) {
     const meeting = await prisma.meeting.create({

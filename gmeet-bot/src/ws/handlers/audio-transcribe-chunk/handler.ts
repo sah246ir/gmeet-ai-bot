@@ -1,6 +1,6 @@
-import { TranscribeManager, broadcast } from "../../..";
-import { prisma } from "../../../lib/prisma";
-import { AudioTranscribeChunkSchemaType } from "./schema";
+import { TranscribeManager, broadcast } from "../../../index.js";
+import { prisma } from "../../../lib/prisma.js";
+import { AudioTranscribeChunkSchemaType } from "./schema.js";
 
 export const audioTranscribeChunkHandler = async (event:AudioTranscribeChunkSchemaType)=>{
     let client = TranscribeManager.getInstance(event.meetingId)

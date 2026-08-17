@@ -1,5 +1,5 @@
 import { TranscriptSegment } from "@prisma/client";
-import { ChunkMetadata } from "../services/pinecone/pinecone";
+import { ChunkMetadata } from "../services/pinecone/pinecone.js";
 
 type PersistedWord = { word: string; speaker?: number };
 

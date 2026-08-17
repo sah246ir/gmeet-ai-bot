@@ -1,11 +1,11 @@
 import { MeetingStatus } from "@prisma/client";
-import { TranscribeManager } from "../../..";
+import { TranscribeManager } from "../../../index.js";
 import { addMeetingStatusLog } from "../../../http/modules/meeting/meeting.service.js";
-import { AudioTranscribeEndSchemaType } from "./schema";
-import { RagService } from "../../../lib/rag";
-import { groupTranscripts } from "../../../lib/group-transcripts";
-import { prisma } from "../../../lib/prisma";
-import { dockerService } from "../../../services/docker/docker";
+import { AudioTranscribeEndSchemaType } from "./schema.js";
+import { RagService } from "../../../lib/rag.js";
+import { groupTranscripts } from "../../../lib/group-transcripts.js";
+import { prisma } from "../../../lib/prisma.js";
+import { dockerService } from "../../../services/docker/docker.js";
 
 export const audioTranscribeEndHandler = async (event: AudioTranscribeEndSchemaType) => {
     console.log("end")

@@ -1,10 +1,10 @@
 import type { Server as HttpServer } from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { WSEventSchema } from './handlers/schema';
-import { audioTranscribeChunkHandler } from './handlers/audio-transcribe-chunk/handler';
-import { audioTranscribeEndHandler } from './handlers/audio-transcribe-end/handler';
-import { meetingJoiningHandler } from './handlers/meeting-joining/handler';
-import { meetingJoinedHandler } from './handlers/meeting-joined/handler';
+import { WSEventSchema } from './handlers/schema.js';
+import { audioTranscribeChunkHandler } from './handlers/audio-transcribe-chunk/handler.js';
+import { audioTranscribeEndHandler } from './handlers/audio-transcribe-end/handler.js';
+import { meetingJoiningHandler } from './handlers/meeting-joining/handler.js';
+import { meetingJoinedHandler } from './handlers/meeting-joined/handler.js';
 
 export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
