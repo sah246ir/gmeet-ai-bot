@@ -21,10 +21,36 @@ export const api = axios.create({
   },
 })
 
-api.interceptors.request.use((config) => {
-  const token = getSessionToken()
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+let sessionPromise: Promise<string> | null = null
+
+async function ensureSessionToken(): Promise<string> {
+  const existing = getSessionToken()
+  if (existing) return existing
+
+  if (!sessionPromise) {
+    sessionPromise = api
+      .post<{ token: string; expiresAt: string }>('/session')
+      .then(({ data }) => {
+        setSessionToken(data.token)
+        return data.token
+      })
+      .finally(() => {
+        sessionPromise = null
+      })
   }
+
+  return sessionPromise
+}
+
+api.interceptors.request.use(async (config) => {
+  if (config.url === '/session') {
+    const token = getSessionToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  }
+
+  config.headers.Authorization = `Bearer ${await ensureSessionToken()}`
   return config
 })
