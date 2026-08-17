@@ -12,6 +12,7 @@ import { AskMeeting } from '../components/meeting/AskMeeting'
 import { TranscriptList, type TranscriptState } from '../components/meeting/TranscriptList'
 import { MeetingSummary } from '../components/meeting/MeetingSummary'
 import { useEndMeeting, useMeeting, useMeetingTranscripts } from '../hooks/useMeetings'
+import { useEnsureSession } from '../hooks/useSession'
 import {
   deriveMeetingTitle,
   latestStatus,
@@ -31,6 +32,7 @@ function BackgroundGlow() {
 
 export function MeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>()
+  const sessionQuery = useEnsureSession()
   const meetingQuery = useMeeting(meetingId)
   const meeting = meetingQuery.data
   const status = meeting ? latestStatus(meeting.statusLogs) : undefined
@@ -41,7 +43,7 @@ export function MeetingDetailPage() {
 
   const [endDialogOpen, setEndDialogOpen] = useState(false)
 
-  if (meetingQuery.isLoading) {
+  if (sessionQuery.isLoading || meetingQuery.isLoading) {
     return (
       <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
         <BackgroundGlow />

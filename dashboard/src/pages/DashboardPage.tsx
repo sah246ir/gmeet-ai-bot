@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
+import { Spinner } from '../components/ui/Spinner'
 import { SectionHeader } from '../components/dashboard/SectionHeader'
 import { EmptyState } from '../components/dashboard/EmptyState'
 import { LoadingState } from '../components/dashboard/LoadingState'
@@ -11,6 +12,7 @@ import { MeetingCard } from '../components/dashboard/MeetingCard'
 import { MeetingInput } from '../components/dashboard/MeetingInput'
 import { RagSearch } from '../components/dashboard/RagSearch'
 import { useCreateMeeting, useEndMeeting, useMeetings } from '../hooks/useMeetings'
+import { useEnsureSession } from '../hooks/useSession'
 import {
   deriveMeetingTitle,
   formatElapsedSince,
@@ -30,6 +32,7 @@ function BackgroundGlow() {
 
 export function DashboardPage() {
   const navigate = useNavigate()
+  const sessionQuery = useEnsureSession()
   const meetingsQuery = useMeetings()
   const createMeeting = useCreateMeeting()
   const endMeeting = useEndMeeting()
@@ -38,6 +41,18 @@ export function DashboardPage() {
 
   function scrollToMeetingInput() {
     meetingInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+
+  if (sessionQuery.isLoading) {
+    return (
+      <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
+        <BackgroundGlow />
+        <Navbar />
+        <main className="relative z-10 flex flex-1 items-center justify-center">
+          <Spinner className="h-6 w-6 border-2 border-white/15 border-t-white/60" />
+        </main>
+      </div>
+    )
   }
 
   function handleBringIn(url: string) {
