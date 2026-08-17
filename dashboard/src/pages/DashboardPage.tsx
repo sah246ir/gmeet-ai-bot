@@ -1,13 +1,24 @@
 import { useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import { Container } from '../components/ui/Container'
 import { Button } from '../components/ui/Button'
 import { SectionHeader } from '../components/dashboard/SectionHeader'
 import { EmptyState } from '../components/dashboard/EmptyState'
+import { LoadingState } from '../components/dashboard/LoadingState'
+import { ErrorState } from '../components/dashboard/ErrorState'
 import { MeetingCard } from '../components/dashboard/MeetingCard'
 import { MeetingInput } from '../components/dashboard/MeetingInput'
 import { RagSearch } from '../components/dashboard/RagSearch'
-import { initialActiveMeetings, initialPastMeetings } from '../mock/meetings'
+import { useCreateMeeting, useEndMeeting, useMeetings } from '../hooks/useMeetings'
+import {
+  deriveMeetingTitle,
+  formatElapsedSince,
+  formatMeetingDate,
+  isActiveMeeting,
+  latestStatus,
+  toDashboardStatus,
+} from '../lib/meetingDisplay'
 
 function BackgroundGlow() {
   return (
@@ -18,8 +29,10 @@ function BackgroundGlow() {
 }
 
 export function DashboardPage() {
-  const activeMeetings = initialActiveMeetings
-  const pastMeetings = initialPastMeetings
+  const navigate = useNavigate()
+  const meetingsQuery = useMeetings()
+  const createMeeting = useCreateMeeting()
+  const endMeeting = useEndMeeting()
 
   const meetingInputRef = useRef<HTMLDivElement>(null)
 
@@ -27,7 +40,16 @@ export function DashboardPage() {
     meetingInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
-  const hasNoMeetingsAtAll = activeMeetings.length === 0 && pastMeetings.length === 0
+  function handleBringIn(url: string) {
+    createMeeting.mutate(url, {
+      onSuccess: (meeting) => navigate(`/meeting/${meeting.id}`),
+    })
+  }
+
+  const meetings = meetingsQuery.data ?? []
+  const activeMeetings = meetings.filter((m) => isActiveMeeting(latestStatus(m.statusLogs)))
+  const pastMeetings = meetings.filter((m) => !isActiveMeeting(latestStatus(m.statusLogs)))
+  const hasNoMeetingsAtAll = meetingsQuery.isSuccess && meetings.length === 0
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
@@ -47,20 +69,30 @@ export function DashboardPage() {
           </div>
 
           <div ref={meetingInputRef} className="mt-10">
-            <MeetingInput onBringIn={() => {}} />
+            <MeetingInput onBringIn={handleBringIn} />
           </div>
 
           <section className="mt-16">
             <SectionHeader
               title="Active meetings"
               action={
-                <span className="text-xs text-white/35">
-                  {activeMeetings.length} active
-                </span>
+                meetingsQuery.isSuccess && (
+                  <span className="text-xs text-white/35">
+                    {activeMeetings.length} active
+                  </span>
+                )
               }
             />
             <div className="mt-6">
-              {activeMeetings.length === 0 ? (
+              {meetingsQuery.isLoading ? (
+                <LoadingState count={2} />
+              ) : meetingsQuery.isError ? (
+                <ErrorState
+                  title="Couldn't load your meetings"
+                  description="Something went wrong while loading your meetings."
+                  onRetry={() => meetingsQuery.refetch()}
+                />
+              ) : activeMeetings.length === 0 ? (
                 <EmptyState
                   title="No active meetings"
                   description="Bring in a Google Meet to start capturing a conversation."
@@ -72,18 +104,25 @@ export function DashboardPage() {
                 />
               ) : (
                 <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {activeMeetings.map((meeting) => (
-                    <MeetingCard
-                      key={meeting.id}
-                      variant="active"
-                      id={meeting.id}
-                      title={meeting.title}
-                      url={meeting.url}
-                      status={meeting.status}
-                      durationLabel={meeting.durationLabel}
-                      onEnd={() => {}}
-                    />
-                  ))}
+                  {activeMeetings.map((meeting) => {
+                    const status = latestStatus(meeting.statusLogs)
+                    return (
+                      <MeetingCard
+                        key={meeting.id}
+                        variant="active"
+                        id={meeting.id}
+                        title={deriveMeetingTitle(meeting.url)}
+                        url={meeting.url}
+                        status={toDashboardStatus(status) as 'joining' | 'active' | 'processing' | 'failed'}
+                        durationLabel={
+                          status === 'STARTING' || status === 'CREATING_JOINEE_BOT' || status === 'JOINING_MEETING'
+                            ? 'Starting...'
+                            : formatElapsedSince(meeting.createdAt)
+                        }
+                        onEnd={() => endMeeting.mutate(meeting.id)}
+                      />
+                    )
+                  })}
                 </div>
               )}
             </div>
@@ -109,7 +148,15 @@ export function DashboardPage() {
           <section className="mt-16">
             <SectionHeader title="Past meetings" description="Your meeting history" />
             <div className="mt-6">
-              {pastMeetings.length === 0 ? (
+              {meetingsQuery.isLoading ? (
+                <LoadingState count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" />
+              ) : meetingsQuery.isError ? (
+                <ErrorState
+                  title="Couldn't load your meetings"
+                  description="Something went wrong while loading your meetings."
+                  onRetry={() => meetingsQuery.refetch()}
+                />
+              ) : pastMeetings.length === 0 ? (
                 <EmptyState
                   title="No meetings yet"
                   description="Your completed meetings will appear here."
@@ -121,9 +168,8 @@ export function DashboardPage() {
                       key={meeting.id}
                       variant="past"
                       id={meeting.id}
-                      title={meeting.title}
-                      dateLabel={meeting.dateLabel}
-                      chunksLabel={meeting.chunksLabel}
+                      title={deriveMeetingTitle(meeting.url)}
+                      dateLabel={formatMeetingDate(meeting.createdAt)}
                     />
                   ))}
                 </div>

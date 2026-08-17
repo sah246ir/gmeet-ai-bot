@@ -2,6 +2,7 @@ export type MeetingStatus =
   | 'STARTING'
   | 'CREATING_JOINEE_BOT'
   | 'JOINING_MEETING'
+  | 'MEETING_PROCESSED'
   | 'PROCESSING_MEETING'
   | 'COMPLETED'
   | 'FAILED'

@@ -26,3 +26,8 @@ export async function getMeetingTranscripts(meetingId: string): Promise<Transcri
   const { data } = await api.get<TranscriptSegment[]>(`/meetings/${meetingId}/transcripts`)
   return data
 }
+
+export async function endMeeting(meetingId: string): Promise<{ status: string }> {
+  const { data } = await api.post<{ status: string }>(`/meetings/${meetingId}/end`)
+  return data
+}

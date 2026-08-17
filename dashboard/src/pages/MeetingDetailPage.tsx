@@ -1,22 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Navbar } from '../components/Navbar'
 import { Container } from '../components/ui/Container'
 import { ConfirmationDialog } from '../components/ui/ConfirmationDialog'
 import { SectionHeader } from '../components/dashboard/SectionHeader'
+import { ErrorState } from '../components/dashboard/ErrorState'
+import { Spinner } from '../components/ui/Spinner'
 import { MeetingHeader } from '../components/meeting/MeetingHeader'
 import { MeetingStatusIndicator } from '../components/meeting/MeetingStatusIndicator'
 import { AskMeeting } from '../components/meeting/AskMeeting'
 import { TranscriptList, type TranscriptState } from '../components/meeting/TranscriptList'
-import { MeetingSummary, type SummaryState } from '../components/meeting/MeetingSummary'
+import { MeetingSummary } from '../components/meeting/MeetingSummary'
+import { useEndMeeting, useMeeting, useMeetingTranscripts } from '../hooks/useMeetings'
 import {
-  resolveMeetingDetail,
-  formatElapsed,
-  MOCK_TRANSCRIPT_SEGMENTS,
-  MOCK_SUMMARY,
-  type MeetingLifecycleStatus,
-  type TranscriptSegment,
-} from '../mock/meetingDetail'
+  deriveMeetingTitle,
+  formatElapsedSince,
+  latestStatus,
+  toLifecycleStatus,
+} from '../lib/meetingDisplay'
+import { formatElapsed, type SummaryData } from '../mock/meetingDetail'
+
+const EMPTY_SUMMARY: SummaryData = { overview: '', keyPoints: [], decisions: [], actionItems: [] }
 
 function BackgroundGlow() {
   return (
@@ -26,36 +30,64 @@ function BackgroundGlow() {
   )
 }
 
-function initialSegmentsFor(status: MeetingLifecycleStatus): TranscriptSegment[] {
-  if (status === 'recording' || status === 'completed') return MOCK_TRANSCRIPT_SEGMENTS
-  if (status === 'failed') return MOCK_TRANSCRIPT_SEGMENTS.slice(0, 3)
-  return []
-}
-
-function initialTranscriptStateFor(status: MeetingLifecycleStatus): TranscriptState {
-  return status === 'joining' ? 'empty' : 'ready'
-}
-
-function initialSummaryStateFor(status: MeetingLifecycleStatus): SummaryState {
-  if (status === 'completed') return 'completed'
-  if (status === 'failed') return 'error'
-  return 'locked'
-}
-
 export function MeetingDetailPage() {
   const { meetingId } = useParams<{ meetingId: string }>()
-  const seed = useMemo(() => resolveMeetingDetail(meetingId ?? ''), [meetingId])
+  const meetingQuery = useMeeting(meetingId)
+  const meeting = meetingQuery.data
+  const status = meeting ? latestStatus(meeting.statusLogs) : undefined
 
-  const status = seed.initialStatus
-  const elapsedSeconds = seed.initialElapsedSeconds
-  const segmentCount = seed.initialSegmentCount
-  const segments = initialSegmentsFor(seed.initialStatus)
-  const transcriptState = initialTranscriptStateFor(seed.initialStatus)
-  const summaryState = initialSummaryStateFor(seed.initialStatus)
+  const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting)
+  const endMeeting = useEndMeeting(meetingId)
 
   const [endDialogOpen, setEndDialogOpen] = useState(false)
 
-  const hasEnded = status === 'completed' || status === 'processing'
+  if (meetingQuery.isLoading) {
+    return (
+      <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
+        <BackgroundGlow />
+        <Navbar />
+        <main className="relative z-10 flex flex-1 items-center justify-center">
+          <Spinner className="h-6 w-6 border-2 border-white/15 border-t-white/60" />
+        </main>
+      </div>
+    )
+  }
+
+  if (meetingQuery.isError || !meeting || !meetingId) {
+    return (
+      <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
+        <BackgroundGlow />
+        <Navbar />
+        <main className="relative z-10 flex-1 py-14 sm:py-16">
+          <Container>
+            <ErrorState
+              title="Couldn't load this meeting"
+              description="It may not exist, or something went wrong while loading it."
+              onRetry={() => meetingQuery.refetch()}
+            />
+          </Container>
+        </main>
+      </div>
+    )
+  }
+
+  const lifecycleStatus = toLifecycleStatus(status!)
+  const hasEnded = status === 'COMPLETED' || status === 'PROCESSING_MEETING'
+
+  const transcriptState: TranscriptState = transcriptsQuery.isLoading
+    ? 'loading'
+    : transcriptsQuery.isError
+      ? 'error'
+      : (transcriptsQuery.data?.length ?? 0) === 0
+        ? 'empty'
+        : 'ready'
+
+  const segments = (transcriptsQuery.data ?? []).map((segment) => ({
+    id: segment.id,
+    speaker: segment.speakerId ?? 'Unknown speaker',
+    timestamp: formatElapsed(segment.startTime),
+    text: segment.text,
+  }))
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
@@ -65,12 +97,12 @@ export function MeetingDetailPage() {
       <main className="relative z-10 flex-1 py-14 sm:py-16">
         <Container>
           <h1 className="text-2xl font-semibold tracking-tight text-white sm:text-3xl">
-            {seed.title}
+            {deriveMeetingTitle(meeting.url)}
           </h1>
 
           <div className="mt-4">
             <MeetingHeader
-              url={seed.url}
+              url={meeting.url}
               hasEnded={hasEnded}
               onEndMeeting={() => setEndDialogOpen(true)}
             />
@@ -78,9 +110,9 @@ export function MeetingDetailPage() {
 
           <div className="mt-8">
             <MeetingStatusIndicator
-              status={status}
-              elapsedLabel={`${formatElapsed(elapsedSeconds)} elapsed`}
-              segmentLabel={`${segmentCount} transcript segment${segmentCount === 1 ? '' : 's'}`}
+              status={lifecycleStatus}
+              elapsedLabel={`${formatElapsedSince(meeting.createdAt)} elapsed`}
+              segmentLabel={`${segments.length} transcript segment${segments.length === 1 ? '' : 's'}`}
             />
           </div>
 
@@ -90,7 +122,7 @@ export function MeetingDetailPage() {
               description="Ask questions about anything discussed in this meeting."
             />
             <div className="mt-6">
-              <AskMeeting />
+              <AskMeeting meetingId={meetingId} />
             </div>
           </section>
 
@@ -101,7 +133,8 @@ export function MeetingDetailPage() {
                 <TranscriptList
                   state={transcriptState}
                   segments={segments}
-                  isLive={status === 'recording'}
+                  isLive={lifecycleStatus === 'recording'}
+                  onRetry={() => transcriptsQuery.refetch()}
                 />
               </div>
             </div>
@@ -109,7 +142,7 @@ export function MeetingDetailPage() {
             <div className="lg:col-span-1">
               <SectionHeader title="Meeting Summary" />
               <div className="mt-6">
-                <MeetingSummary state={summaryState} summary={MOCK_SUMMARY} />
+                <MeetingSummary state="locked" summary={EMPTY_SUMMARY} />
               </div>
             </div>
           </div>
@@ -123,7 +156,10 @@ export function MeetingDetailPage() {
         confirmLabel="End Meeting"
         cancelLabel="Cancel"
         destructive
-        onConfirm={() => setEndDialogOpen(false)}
+        onConfirm={() => {
+          setEndDialogOpen(false)
+          endMeeting.mutate(meetingId)
+        }}
         onCancel={() => setEndDialogOpen(false)}
       />
     </div>

@@ -4,6 +4,8 @@ import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { SuggestedQuestion } from './SuggestedQuestion'
 import { RagAnswer, type RagState } from './RagAnswer'
+import { useQueryMeeting } from '../../hooks/useAi'
+import { isNoResultsAnswer } from '../../lib/meetingDisplay'
 
 const SUGGESTED_QUESTIONS = [
   'What decisions were made?',
@@ -12,39 +14,34 @@ const SUGGESTED_QUESTIONS = [
   'What are the next steps?',
 ]
 
-const MOCK_ANSWER =
-  'We decided to migrate the database to PostgreSQL on Sunday. John will prepare the migration script before Friday.'
+interface AskMeetingProps {
+  meetingId: string
+}
 
-const MOCK_SOURCES = [
-  {
-    range: '02:14 – 02:38',
-    excerpt: 'We discussed the current database and agreed that PostgreSQL would be better...',
-  },
-  {
-    range: '03:05 – 03:22',
-    excerpt: "Let's plan the migration for Sunday so we have a buffer before the week starts.",
-  },
-]
-
-export function AskMeeting() {
+export function AskMeeting({ meetingId }: AskMeetingProps) {
   const [query, setQuery] = useState('')
   const [state, setState] = useState<RagState>('empty')
+  const [answer, setAnswer] = useState('')
+  const queryMeeting = useQueryMeeting(meetingId)
 
   function runSearch(value: string) {
     const trimmed = value.trim()
     if (!trimmed) return
 
     setState('loading')
-    window.setTimeout(() => {
-      const lower = trimmed.toLowerCase()
-      if (lower.includes('error')) {
+    queryMeeting.mutate(trimmed, {
+      onSuccess: (data) => {
+        if (isNoResultsAnswer(data.answer)) {
+          setState('no-results')
+        } else {
+          setAnswer(data.answer)
+          setState('success')
+        }
+      },
+      onError: () => {
         setState('error')
-      } else if (lower.includes('no results') || lower.includes('nothing')) {
-        setState('no-results')
-      } else {
-        setState('success')
-      }
-    }, 1100)
+      },
+    })
   }
 
   function handleSubmit(event: FormEvent) {
@@ -79,8 +76,8 @@ export function AskMeeting() {
       <div className="mt-6 border-t border-white/[0.06] pt-6">
         <RagAnswer
           state={state}
-          answer={MOCK_ANSWER}
-          sources={MOCK_SOURCES}
+          answer={answer}
+          sources={[]}
           onRetry={() => runSearch(query)}
         />
       </div>

@@ -60,14 +60,16 @@ export function RagAnswer({ state, answer, sources, onRetry }: RagAnswerProps) {
   return (
     <div className="space-y-5">
       <p className="text-sm leading-relaxed text-white/75">{answer}</p>
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/30">Sources</p>
-        <div className="space-y-2">
-          {sources.map((source) => (
-            <SourceCard key={source.range} range={source.range} excerpt={source.excerpt} />
-          ))}
+      {sources.length > 0 && (
+        <div>
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/30">Sources</p>
+          <div className="space-y-2">
+            {sources.map((source) => (
+              <SourceCard key={source.range} range={source.range} excerpt={source.excerpt} />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -3,34 +3,33 @@ import { Card } from '../ui/Card'
 import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 import { RagResult, type RagState } from './RagResult'
-
-const MOCK_ANSWER =
-  'PostgreSQL was chosen for the migration, with the migration planned for Sunday. John will prepare the migration script.'
-
-const MOCK_SOURCES = [
-  { label: 'Engineering Sync', timestamp: '02:14' },
-  { label: 'Product Planning', timestamp: '18:42' },
-]
+import { useQuerySession } from '../../hooks/useAi'
+import { isNoResultsAnswer } from '../../lib/meetingDisplay'
 
 export function RagSearch() {
   const [query, setQuery] = useState('')
   const [state, setState] = useState<RagState>('empty')
+  const [answer, setAnswer] = useState('')
+  const querySession = useQuerySession()
 
   function runSearch(value: string) {
     const trimmed = value.trim()
     if (!trimmed) return
 
     setState('loading')
-    window.setTimeout(() => {
-      const lower = trimmed.toLowerCase()
-      if (lower.includes('error')) {
+    querySession.mutate(trimmed, {
+      onSuccess: (data) => {
+        if (isNoResultsAnswer(data.answer)) {
+          setState('no-results')
+        } else {
+          setAnswer(data.answer)
+          setState('success')
+        }
+      },
+      onError: () => {
         setState('error')
-      } else if (lower.includes('no results') || lower.includes('nothing')) {
-        setState('no-results')
-      } else {
-        setState('success')
-      }
-    }, 1100)
+      },
+    })
   }
 
   function handleSubmit(event: FormEvent) {
@@ -67,8 +66,8 @@ export function RagSearch() {
       <div className="mt-6 border-t border-white/[0.06] pt-6">
         <RagResult
           state={state}
-          answer={MOCK_ANSWER}
-          sources={MOCK_SOURCES}
+          answer={answer}
+          sources={[]}
           onRetry={() => runSearch(query)}
         />
       </div>

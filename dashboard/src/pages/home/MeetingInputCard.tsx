@@ -3,14 +3,24 @@ import { useNavigate } from 'react-router-dom'
 import { Button } from '../../components/ui/Button'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
+import { Spinner } from '../../components/ui/Spinner'
+import { useCreateMeeting } from '../../hooks/useMeetings'
 
 export function MeetingInputCard() {
   const [url, setUrl] = useState('')
   const navigate = useNavigate()
+  const createMeeting = useCreateMeeting()
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    navigate('/dashboard')
+    const trimmed = url.trim()
+    if (!trimmed || createMeeting.isPending) return
+
+    createMeeting.mutate(trimmed, {
+      onSuccess: (meeting) => {
+        navigate(`/meeting/${meeting.id}`)
+      },
+    })
   }
 
   return (
@@ -31,15 +41,31 @@ export function MeetingInputCard() {
           onChange={(event) => setUrl(event.target.value)}
           placeholder="https://meet.google.com/..."
           aria-label="Google Meet link"
+          disabled={createMeeting.isPending}
           required
         />
-        <Button type="submit" className="w-full">
-          Continue
-          <span aria-hidden="true">→</span>
+        <Button type="submit" className="w-full" disabled={createMeeting.isPending}>
+          {createMeeting.isPending ? (
+            <>
+              <Spinner className="h-4 w-4 border-2 border-[#05060a]/25 border-t-[#05060a]/70" />
+              Bringing in bot...
+            </>
+          ) : (
+            <>
+              Continue
+              <span aria-hidden="true">→</span>
+            </>
+          )}
         </Button>
       </form>
 
-      <p className="mt-4 text-xs text-white/30">Google Meet links only</p>
+      {createMeeting.isError ? (
+        <p className="mt-4 text-xs text-red-400/80">
+          Couldn&apos;t bring in the bot. Check the link and try again.
+        </p>
+      ) : (
+        <p className="mt-4 text-xs text-white/30">Google Meet links only</p>
+      )}
     </Card>
   )
 }
