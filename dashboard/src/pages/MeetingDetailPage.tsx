@@ -34,8 +34,9 @@ export function MeetingDetailPage() {
   const meetingQuery = useMeeting(meetingId)
   const meeting = meetingQuery.data
   const status = meeting ? latestStatus(meeting.statusLogs) : undefined
+  const hasEnded = status === 'COMPLETED' || status === 'PROCESSING_MEETING'
 
-  const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting)
+  const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting, !hasEnded)
   const endMeeting = useEndMeeting(meetingId)
 
   const [endDialogOpen, setEndDialogOpen] = useState(false)
@@ -71,7 +72,6 @@ export function MeetingDetailPage() {
   }
 
   const lifecycleStatus = toLifecycleStatus(status!)
-  const hasEnded = status === 'COMPLETED' || status === 'PROCESSING_MEETING'
 
   const transcriptState: TranscriptState = transcriptsQuery.isLoading
     ? 'loading'
@@ -81,12 +81,15 @@ export function MeetingDetailPage() {
         ? 'empty'
         : 'ready'
 
-  const segments = (transcriptsQuery.data ?? []).map((segment) => ({
-    id: segment.id,
-    speaker: segment.speakerId ?? 'Unknown speaker',
-    timestamp: formatElapsed(segment.startTime),
-    text: segment.text,
-  }))
+  const segments = (transcriptsQuery.data ?? []).map((segment) => {
+    const speakerNumber = segment.words?.[0]?.speaker
+    return {
+      id: segment.id,
+      speaker: speakerNumber !== undefined ? `Speaker ${speakerNumber + 1}` : 'Unknown speaker',
+      timestamp: formatElapsed(segment.startTime),
+      text: segment.text,
+    }
+  })
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">

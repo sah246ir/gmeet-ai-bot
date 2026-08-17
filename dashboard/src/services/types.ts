@@ -42,6 +42,11 @@ export interface Job {
   updatedAt: string
 }
 
+export interface TranscriptWord {
+  word: string
+  speaker?: number
+}
+
 export interface TranscriptSegment {
   id: string
   meetingId: string
@@ -49,7 +54,7 @@ export interface TranscriptSegment {
   startTime: number
   endTime: number
   speakerId: string | null
-  words: unknown | null
+  words: TranscriptWord[] | null
   createdAt: string
 }
 

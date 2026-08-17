@@ -27,12 +27,12 @@ export function useMeeting(meetingId: string | undefined) {
   })
 }
 
-export function useMeetingTranscripts(meetingId: string | undefined, enabled: boolean) {
+export function useMeetingTranscripts(meetingId: string | undefined, enabled: boolean, live: boolean) {
   return useQuery({
     queryKey: ['meetings', meetingId, 'transcripts'],
     queryFn: () => getMeetingTranscripts(meetingId!),
     enabled: !!meetingId && enabled,
-    refetchInterval: 4000,
+    refetchInterval: live ? 4000 : false,
   })
 }
 
