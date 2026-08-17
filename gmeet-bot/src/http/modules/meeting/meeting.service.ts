@@ -1,8 +1,9 @@
 import { prisma } from "../../../lib/prisma.js";
 import { MeetingStatus } from "@prisma/client";
+import { dockerService } from "../../../services/docker/docker.js";
 
 export async function createMeeting(sessionToken: string, url: string) {
-    return prisma.meeting.create({
+    const meeting = await prisma.meeting.create({
         data: {
             url,
             sessionToken,
@@ -10,9 +11,39 @@ export async function createMeeting(sessionToken: string, url: string) {
                 create: { status: MeetingStatus.STARTING },
             },
         },
-        include: {
-            statusLogs: true,
-        },
+    });
+
+    try {
+        await addMeetingStatusLog(meeting.id, MeetingStatus.CREATING_JOINEE_BOT);
+
+        const { containerId } = await dockerService.createContainer({
+            meetingId: meeting.id,
+            meetingUrl: meeting.url,
+        });
+
+        await setMeetingContainerId(meeting.id, containerId);
+        await addMeetingStatusLog(meeting.id, MeetingStatus.JOINING_MEETING);
+    } catch (error) {
+        await addMeetingStatusLog(
+            meeting.id,
+            MeetingStatus.FAILED,
+            error instanceof Error ? error.message : "failed to create sandbox container",
+        );
+    }
+
+    return (await getOwnedMeetingOrNull(meeting.id, sessionToken))!;
+}
+
+export async function addMeetingStatusLog(meetingId: string, status: MeetingStatus, error?: string) {
+    return prisma.meetingStatusLog.create({
+        data: { meetingId, status, error },
+    });
+}
+
+export async function setMeetingContainerId(meetingId: string, containerId: string) {
+    return prisma.meeting.update({
+        where: { id: meetingId },
+        data: { containerId },
     });
 }
 
