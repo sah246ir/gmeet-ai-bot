@@ -47,9 +47,17 @@ export function DashboardPage() {
   }
 
   const meetings = meetingsQuery.data ?? []
-  const activeMeetings = meetings.filter((m) => isActiveMeeting(latestStatus(m.statusLogs)))
-  const pastMeetings = meetings.filter((m) => !isActiveMeeting(latestStatus(m.statusLogs)))
   const hasNoMeetingsAtAll = meetingsQuery.isSuccess && meetings.length === 0
+  const activeCount = meetings.filter((m) => isActiveMeeting(latestStatus(m.statusLogs))).length
+
+  // Active meetings float to the top; ended (completed) meetings sink to the
+  // bottom, each group keeping its existing createdAt-desc order.
+  const sortedMeetings = [...meetings].sort((a, b) => {
+    const aActive = isActiveMeeting(latestStatus(a.statusLogs))
+    const bActive = isActiveMeeting(latestStatus(b.statusLogs))
+    if (aActive === bActive) return 0
+    return aActive ? -1 : 1
+  })
 
   return (
     <div className="relative flex min-h-svh flex-col overflow-hidden bg-[#05060a]">
@@ -74,27 +82,43 @@ export function DashboardPage() {
 
           <section className="mt-16">
             <SectionHeader
-              title="Active meetings"
+              title="Ask your meetings"
+              description="Search across everything you've discussed in Memora."
+            />
+            <div className="mt-6">
+              {hasNoMeetingsAtAll ? (
+                <EmptyState
+                  title="Your meeting memory starts here"
+                  description="Once you have meetings in Memora, ask questions across all of them."
+                />
+              ) : (
+                <RagSearch />
+              )}
+            </div>
+          </section>
+
+          <section className="mt-16">
+            <SectionHeader
+              title="Meetings"
               action={
-                meetingsQuery.isSuccess && (
-                  <span className="text-xs text-white/35">
-                    {activeMeetings.length} active
-                  </span>
+                meetingsQuery.isSuccess &&
+                activeCount > 0 && (
+                  <span className="text-xs text-white/35">{activeCount} active</span>
                 )
               }
             />
             <div className="mt-6">
               {meetingsQuery.isLoading ? (
-                <LoadingState count={2} />
+                <LoadingState count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" />
               ) : meetingsQuery.isError ? (
                 <ErrorState
                   title="Couldn't load your meetings"
                   description="Something went wrong while loading your meetings."
                   onRetry={() => meetingsQuery.refetch()}
                 />
-              ) : activeMeetings.length === 0 ? (
+              ) : sortedMeetings.length === 0 ? (
                 <EmptyState
-                  title="No active meetings"
+                  title="No meetings yet"
                   description="Bring in a Google Meet to start capturing a conversation."
                   action={
                     <Button type="button" variant="ghost" onClick={scrollToMeetingInput}>
@@ -103,9 +127,22 @@ export function DashboardPage() {
                   }
                 />
               ) : (
-                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                  {activeMeetings.map((meeting) => {
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {sortedMeetings.map((meeting) => {
                     const status = latestStatus(meeting.statusLogs)
+
+                    if (!isActiveMeeting(status)) {
+                      return (
+                        <MeetingCard
+                          key={meeting.id}
+                          variant="past"
+                          id={meeting.id}
+                          title={deriveMeetingTitle(meeting.url)}
+                          dateLabel={formatMeetingDate(meeting.createdAt)}
+                        />
+                      )
+                    }
+
                     return (
                       <MeetingCard
                         key={meeting.id}
@@ -123,55 +160,6 @@ export function DashboardPage() {
                       />
                     )
                   })}
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="mt-16">
-            <SectionHeader
-              title="Ask your meetings"
-              description="Search across everything you've discussed in Memora."
-            />
-            <div className="mt-6">
-              {hasNoMeetingsAtAll ? (
-                <EmptyState
-                  title="Your meeting memory starts here"
-                  description="Once you have meetings in Memora, ask questions across all of them."
-                />
-              ) : (
-                <RagSearch />
-              )}
-            </div>
-          </section>
-
-          <section className="mt-16">
-            <SectionHeader title="Past meetings" description="Your meeting history" />
-            <div className="mt-6">
-              {meetingsQuery.isLoading ? (
-                <LoadingState count={3} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" />
-              ) : meetingsQuery.isError ? (
-                <ErrorState
-                  title="Couldn't load your meetings"
-                  description="Something went wrong while loading your meetings."
-                  onRetry={() => meetingsQuery.refetch()}
-                />
-              ) : pastMeetings.length === 0 ? (
-                <EmptyState
-                  title="No meetings yet"
-                  description="Your completed meetings will appear here."
-                />
-              ) : (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {pastMeetings.map((meeting) => (
-                    <MeetingCard
-                      key={meeting.id}
-                      variant="past"
-                      id={meeting.id}
-                      title={deriveMeetingTitle(meeting.url)}
-                      dateLabel={formatMeetingDate(meeting.createdAt)}
-                    />
-                  ))}
                 </div>
               )}
             </div>
