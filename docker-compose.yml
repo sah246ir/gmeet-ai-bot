@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-gmeet_bot}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Backend: HTTP API + websocket server. Talks to the host's Docker
+  # daemon (via the mounted socket) to spin up a joinee container per
+  # meeting, using the image built by the `joinee` service below.
+  gmeet-bot:
+    build:
+      context: ./gmeet-bot
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-gmeet_bot}?schema=public
+      REDIS_URL: redis://redis:6379
+      PORT: 3000
+      CONSUMER_URL: ${CONSUMER_URL:-http://localhost:3000}
+      DOCKER_VERSION: ${DOCKER_VERSION:-1.46}
+      USE_DOCKER: ${USE_DOCKER:-1}
+      DOCKER_IMAGE: ${DOCKER_IMAGE:-meet-joiner:latest}
+      DEEPGRAM_KEY: ${DEEPGRAM_KEY}
+      PINECONE_KEY: ${PINECONE_KEY}
+      PINECONE_INDEX: ${PINECONE_INDEX}
+      GROQ_KEY: ${GROQ_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  # Frontend, served via the Vite dev server so it can be tested without a
+  # separate production build/reverse-proxy setup.
+  dashboard:
+    build:
+      context: ./dashboard
+    restart: unless-stopped
+    depends_on:
+      - gmeet-bot
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    ports:
+      - "5173:5173"
+
+  # Not a long-running service — this only exists so `docker compose up`
+  # builds and tags the joinee image (as $DOCKER_IMAGE) that gmeet-bot
+  # spins up on demand for each meeting. It exits immediately after build.
+  #
+  # Requires joinee/google_session.json to exist first — run
+  # `cd joinee && npm ci && npm run login` once, locally, to create it.
+  joinee:
+    build:
+      context: ./joinee
+      dockerfile: dockerfile
+    image: ${DOCKER_IMAGE:-meet-joiner:latest}
+    entrypoint: ["true"]
+    restart: "no"
+
+volumes:
+  postgres_data:

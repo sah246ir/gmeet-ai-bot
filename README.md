@@ -16,6 +16,25 @@ Separately, a background job can take everything that's been saved for a meeting
 
 The attendee service keeps watching the meeting for signs that it has ended — either being told directly, or noticing on its own that everyone left or that it was removed — at which point it stops recording, tells the backend the meeting is over, and closes itself down.
 
+## Running everything with Docker Compose
+
+`docker-compose.yml` at the repo root brings up the whole stack for testing:
+
+```
+cp .env.example .env   # fill in DEEPGRAM_KEY, PINECONE_KEY, PINECONE_INDEX, GROQ_KEY
+docker compose up
+```
+
+This starts Postgres, Redis, the `gmeet-bot` backend (`:3000`), and the dashboard
+frontend (`:5173`). It also builds the `joinee` image and tags it `meet-joiner:latest`
+so `gmeet-bot` can spin up a joinee container per meeting via the Docker socket — but
+`joinee` itself isn't kept running by Compose, since it's meant to be launched on
+demand, not as a standing service.
+
+Building `joinee` requires `joinee/google_session.json` to already exist — run
+`cd joinee && npm ci && npm run login` once, locally (outside Docker, interactively),
+to create it before running `docker compose up`.
+
 ## Project layout
 
 The repository is a small monorepo with two top-level services, each documented in its own README:
@@ -26,5 +45,6 @@ The repository is a small monorepo with two top-level services, each documented 
 Everything else at the root is repository-level plumbing:
 
 - **`README.md`** — this file.
+- **`docker-compose.yml`** / **`.env.example`** — brings up the whole stack for testing; see "Running everything with Docker Compose" above.
 - **`.gitignore`** — excludes dependencies (`node_modules`), build output (`dist`, `*.tsbuildinfo`), and sensitive local files (`.env`, `google_session.json`) from both services.
 - **`.claude/`** — local configuration for the Claude Code assistant used to develop this repository; not part of the running application.
