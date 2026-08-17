@@ -6,9 +6,9 @@ import { AudioTranscribeEndSchemaType } from "./schema";
 export const audioTranscribeEndHandler = async (event: AudioTranscribeEndSchemaType) => {
     console.log("end")
     await addMeetingStatusLog(event.meetingId, MeetingStatus.PROCESSING_MEETING);
-    // const client = TranscribeManager.getInstance(event.meetingId)
-    // if (client === undefined) return
+    const client = TranscribeManager.getInstance(event.meetingId)
+    if (client === undefined) return
 
-    // client.stopSession()
-    // TranscribeManager.removeInstance(event.meetingId)
+    client.stopSession()
+    TranscribeManager.removeInstance(event.meetingId)
 }

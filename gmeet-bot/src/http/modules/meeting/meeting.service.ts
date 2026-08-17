@@ -21,23 +21,25 @@ export async function createMeeting(sessionToken: string, url: string) {
             meetingId: meeting.id,
             meetingUrl: meeting.url,
         });
-
+        console.log("container",containerId)
         await setMeetingContainerId(meeting.id, containerId);
     } catch (error) {
+        console.log(error)
         await addMeetingStatusLog(
             meeting.id,
             MeetingStatus.FAILED,
             error instanceof Error ? error.message : "failed to create sandbox container",
         );
     }
-
     return (await getOwnedMeetingOrNull(meeting.id, sessionToken))!;
 }
 
 export async function addMeetingStatusLog(meetingId: string, status: MeetingStatus, error?: string) {
-    return prisma.meetingStatusLog.create({
+    const statusLog = await prisma.meetingStatusLog.create({
         data: { meetingId, status, error },
     });
+    broadcast({ type: "meeting-status", meetingId, statusLog });
+    return statusLog;
 }
 
 export async function setMeetingContainerId(meetingId: string, containerId: string) {
