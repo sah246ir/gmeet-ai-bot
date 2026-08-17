@@ -1,32 +1,94 @@
 # Joinee
 
-Joinee is the part of Meeting Bot that actually shows up to the call. It's a real, automated web browser that logs into Google, joins a Google Meet exactly as a human attendee would, and quietly listens for the whole meeting. It doesn't take notes itself — its only job is to capture the meeting's audio and send it, live, to the backend service that does the listening and remembering. When the meeting ends, it notices, says goodbye, and shuts itself down.
+Joinee is the part of Meeting Bot that actually shows up to the call — a real,
+automated Chrome browser that logs into Google, joins a Google Meet exactly like a
+human attendee, and captures the meeting's audio as it plays. It doesn't transcribe or
+remember anything itself; its only job is to join, capture, and stream that audio live
+to the `gmeet-bot` backend, then notice when the meeting's over and shut itself down.
 
-## How it works
+## Architecture
 
-Before Joinee can join any real meeting, someone has to log it into a Google account once. A separate "login" script opens a visible Chrome window and waits for a person to sign in by hand — this is deliberately manual, since Google login flows resist full automation. Once signed in, the browser's cookies and local storage are saved to a session file. Every future run of the bot loads that same file into a fresh browser context, so it appears to Google as that same already-logged-in user without ever repeating the login step.
+```mermaid
+flowchart TB
+    ENV["ENV.ts\nMEETING_URL · CONSUMER_URL · MEETING_ID"] --> Index
+    Index["index.ts"] --> Streamer["streamer.ts\nWebSocket client"]
+    Index --> Meeting["meeting.ts\njoin + watch for end"]
+    Meeting -->|Playwright + saved session| Session[("google_session.json")]
+    Meeting -->|joins as attendee| Meet[("Google Meet tab")]
+    Index --> Audio["audio.ts\ncapture process"]
+    Meet -->|virtual audio sink| Audio
+    Audio -->|audio chunks| Streamer
+    Meeting -->|meeting ended| Index
+    Streamer <-->|WebSocket| Backend[("gmeet-bot")]
+```
 
-A run starts by reading its configuration — which meeting to join, where to send the audio, and an identifier for that meeting — from environment variables. It immediately opens a live connection to the backend service so it has somewhere to stream audio to before it even joins the call.
+`index.ts` opens the WebSocket connection first, then hands off to `meeting.ts` to join
+the call and to `audio.ts` to start capturing. Audio chunks flow straight to the
+backend as they're produced; `meeting.ts` watches for the call ending — either told by
+the backend or noticed on the page itself — and reports back to `index.ts` to wind
+everything down.
 
-To join, it launches a real Chrome browser through Playwright with a handful of settings meant to make an automated browser behave like an ordinary one: it auto-grants (fake) microphone and camera permissions so Google's permission prompts don't block it, spoofs a normal desktop browser's identity, and disables the signals Chrome normally exposes that reveal it's being automated. It loads the saved Google session into this browser, then navigates to the meeting link. If Google shows a dialog offering to continue without a camera or microphone, it dismisses it. Then it looks for whichever join button Google is currently showing — a direct "Join now" if the bot is already allowed in, or "Ask to join" if it needs to be admitted by someone in the call — and clicks it. Once inside, it turns on Google's built-in live captions with a keyboard shortcut and starts forwarding the browser's own console output to its logs, mainly for debugging.
+## Folder structure
 
-Capturing audio doesn't involve tapping any microphone. Instead, the environment the bot runs in is set up with a *virtual* audio device — anything the browser tab "plays" (i.e., the meeting's audio) gets routed into it instead of real speakers. A small audio-processing process is spawned to continuously read from that virtual device and convert it into a clean, standard audio format. As soon as that process produces a piece of audio, the bot doesn't wait for the meeting to finish — it immediately base64-encodes that piece and sends it over its live connection to the backend as a single message, along with which meeting it belongs to and a running count so the pieces can be kept in order on the receiving end.
+### `src/index.ts` — entry point
 
-While all this is happening, the bot is watching for the meeting to end in two independent ways. If the backend ever tells it the meeting has ended, it reacts immediately — closing the browser and stopping the audio capture right away. Otherwise, it periodically checks the meeting page itself, every few seconds, looking for any sign that things are over: text saying the user left, text saying the meeting itself ended, or a message saying the bot was removed from the call. Whichever way it finds out, once the meeting is confirmed over, it stops capturing audio, sends one final message telling the backend that this meeting's audio stream is finished, and closes its connection.
+Reads its config from environment variables, opens the WebSocket connection to the
+backend before doing anything else, joins the meeting, wires the captured audio stream
+into outgoing messages, and coordinates shutdown — either on a signal from the backend
+or by detecting locally that the meeting ended.
 
-When Joinee runs inside a container (its intended deployment), a startup script does the environment setup that would normally require a real desktop: it starts a virtual display so Chrome has somewhere to render even with no physical screen attached, starts the virtual audio system and creates the virtual sink the audio capture step depends on, and only then launches the compiled application.
+### `src/meeting.ts` — browser automation
 
-## Project layout
+Launches Chrome via Playwright with the saved Google session loaded, navigates to the
+meeting link, dismisses the media-permission dialog, and clicks whichever join button
+Google shows ("Join now" or "Ask to join"). Afterward it polls the page every few
+seconds for signs the meeting has ended.
 
-- **`src/index.ts`** — the entry point. Opens the websocket connection to the backend, joins the meeting, wires the captured audio stream into outgoing websocket messages, and coordinates shutdown when the meeting ends (either via a signal from the backend or by detecting it locally).
-- **`src/meeting.ts`** — all of the browser automation: launching Chrome with the saved Google session, navigating to and joining the meeting (handling both the "Join now" and "Ask to join" flows and the media-permission dialog), and polling the page afterward to detect when the meeting has ended.
-- **`src/audio.ts`** — spawns the audio-capture process that reads from the virtual audio sink and produces a stream of raw, ready-to-send audio data.
-- **`src/streamer.ts`** — a small helper that opens the websocket connection to the backend's URL.
-- **`src/save-session.ts`** — the standalone, interactive "login" script. Opens a visible browser, waits for a human to log into Google, and writes the resulting session to `google_session.json`. Run this once (or whenever the saved session expires) before running the bot for real.
-- **`src/ENV.ts`** — loads and exposes the environment variables the bot needs: the meeting URL to join, the backend's websocket address to stream audio to, and the meeting's identifier.
-- **`google_session.json`** — the saved Google login session produced by `save-session.ts` and consumed by `meeting.ts`. It contains real login credentials in effect (cookies/local storage) and is intentionally excluded from version control.
-- **`scripts/start.sh`** and **`start.sh`** — two container startup scripts that prepare the virtual display/audio environment (creating a virtual audio sink) before launching the built app. They differ slightly in the audio sink they set up (`meeting_sink` vs `virtual_sink`); `start.sh` at the project root is the one currently wired into the Docker image.
-- **`dockerfile`** — a two-stage build: the first stage installs dependencies and compiles the TypeScript source; the second produces the actual runtime image, installing the system-level tools the bot depends on (a virtual display server, the virtual audio system, the audio-processing tool, and Chrome's native library dependencies), downloading Playwright's own Chrome build, and copying in the compiled app, the saved Google session, and the startup script.
-- **`package.json`** — declares the bot as a `type: module` Node project and defines its scripts: `build` (compile), `start` (compile and run), and `login` (compile and run the session-saving script). Its dependencies center on Playwright (browser automation) and `ws` (the websocket client).
-- **`tsconfig.json`** / **`tsconfig.tsbuildinfo`** — TypeScript's project configuration and its incremental-build cache.
-- **`.env`** — local, untracked configuration matching what `ENV.ts` expects (the meeting URL, the backend's address, and the meeting ID).
+### `src/audio.ts` — audio capture
+
+Spawns the process that reads from the container's virtual audio sink and turns
+whatever the meeting tab is playing into a stream of raw, ready-to-send audio data.
+
+### `src/streamer.ts` — backend connection
+
+A small helper that opens the WebSocket connection to the backend's `CONSUMER_URL`.
+
+### `src/save-session.ts` — one-time login
+
+The standalone, interactive login script: opens a visible browser, waits for a human to
+log into Google by hand, and writes the resulting session to `google_session.json`.
+Run it via `npm run login` once (or whenever the saved session expires) before running
+the bot for real.
+
+### `src/ENV.ts` — configuration
+
+Loads the three environment variables everything above depends on: `MEETING_URL`,
+`CONSUMER_URL`, and `MEETING_ID`.
+
+### `dockerfile`, `start.sh`, `scripts/start.sh` — container runtime
+
+A two-stage Docker build: the first stage compiles the TypeScript source, the second
+installs the system-level tools a headless meeting attendee needs — a virtual display
+(Xvfb), the virtual audio system (PulseAudio) and its sink, and Chrome's native library
+dependencies — before copying in the compiled app, the saved session, and a startup
+script. `start.sh` at the project root is the one actually wired into the image: it
+starts Xvfb and PulseAudio, creates the virtual sink, and only then launches the app.
+`scripts/start.sh` is an earlier variant that sets up a differently-named sink and
+isn't currently used by the image.
+
+### `google_session.json`
+
+The saved Google login session produced by `save-session.ts` and consumed by
+`meeting.ts`. It's real login credentials in effect (cookies/local storage), so it's
+gitignored — anyone running the bot has to generate their own locally.
+
+### `package.json`
+
+Scripts: `build` (compile), `start` (compile and run), `login` (compile and run the
+session-saving script). Dependencies center on Playwright (browser automation) and
+`ws` (the WebSocket client).
+
+### `.env`
+
+Local, untracked configuration matching what `ENV.ts` expects: the meeting URL, the
+backend's address, and the meeting ID.
