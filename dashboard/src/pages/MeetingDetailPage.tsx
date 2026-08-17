@@ -12,9 +12,9 @@ import { AskMeeting } from '../components/meeting/AskMeeting'
 import { TranscriptList, type TranscriptState } from '../components/meeting/TranscriptList'
 import { MeetingSummary } from '../components/meeting/MeetingSummary'
 import { useEndMeeting, useMeeting, useMeetingTranscripts } from '../hooks/useMeetings'
+import { useElapsedSeconds } from '../hooks/useElapsedSeconds'
 import {
   deriveMeetingTitle,
-  formatElapsedSince,
   latestStatus,
   toLifecycleStatus,
 } from '../lib/meetingDisplay'
@@ -38,6 +38,9 @@ export function MeetingDetailPage() {
 
   const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting)
   const endMeeting = useEndMeeting(meetingId)
+
+  const isRecording = status ? toLifecycleStatus(status) === 'recording' : false
+  const elapsedSeconds = useElapsedSeconds(meeting?.createdAt, isRecording)
 
   const [endDialogOpen, setEndDialogOpen] = useState(false)
 
@@ -111,7 +114,7 @@ export function MeetingDetailPage() {
           <div className="mt-8">
             <MeetingStatusIndicator
               status={lifecycleStatus}
-              elapsedLabel={`${formatElapsedSince(meeting.createdAt)} elapsed`}
+              elapsedLabel={`${formatElapsed(elapsedSeconds)} elapsed`}
               segmentLabel={`${segments.length} transcript segment${segments.length === 1 ? '' : 's'}`}
             />
           </div>

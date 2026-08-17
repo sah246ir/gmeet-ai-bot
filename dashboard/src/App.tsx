@@ -2,8 +2,11 @@ import { Route, Routes } from 'react-router-dom'
 import { HomePage } from './pages/HomePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { MeetingDetailPage } from './pages/MeetingDetailPage'
+import { useSocket } from './hooks/useSocket'
 
 function App() {
+  useSocket()
+
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
