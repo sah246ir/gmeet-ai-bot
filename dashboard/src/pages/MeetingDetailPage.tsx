@@ -7,12 +7,11 @@ import { SectionHeader } from '../components/dashboard/SectionHeader'
 import { ErrorState } from '../components/dashboard/ErrorState'
 import { Spinner } from '../components/ui/Spinner'
 import { MeetingHeader } from '../components/meeting/MeetingHeader'
-import { MeetingStatusIndicator } from '../components/meeting/MeetingStatusIndicator'
+import { StatusTimeline } from '../components/meeting/StatusTimeline'
 import { AskMeeting } from '../components/meeting/AskMeeting'
 import { TranscriptList, type TranscriptState } from '../components/meeting/TranscriptList'
 import { MeetingSummary } from '../components/meeting/MeetingSummary'
 import { useEndMeeting, useMeeting, useMeetingTranscripts } from '../hooks/useMeetings'
-import { useElapsedSeconds } from '../hooks/useElapsedSeconds'
 import {
   deriveMeetingTitle,
   latestStatus,
@@ -38,9 +37,6 @@ export function MeetingDetailPage() {
 
   const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting)
   const endMeeting = useEndMeeting(meetingId)
-
-  const isRecording = status ? toLifecycleStatus(status) === 'recording' : false
-  const elapsedSeconds = useElapsedSeconds(meeting?.createdAt, isRecording)
 
   const [endDialogOpen, setEndDialogOpen] = useState(false)
 
@@ -111,12 +107,8 @@ export function MeetingDetailPage() {
             />
           </div>
 
-          <div className="mt-8">
-            <MeetingStatusIndicator
-              status={lifecycleStatus}
-              elapsedLabel={`${formatElapsed(elapsedSeconds)} elapsed`}
-              segmentLabel={`${segments.length} transcript segment${segments.length === 1 ? '' : 's'}`}
-            />
+          <div className="mt-6">
+            <StatusTimeline logs={meeting.statusLogs} startedAt={meeting.createdAt} />
           </div>
 
           <section className="mt-16">
