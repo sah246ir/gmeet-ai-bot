@@ -3,13 +3,13 @@ import { MeetingStatus } from "@prisma/client";
 import { connection } from "../connection.js";
 import { prisma } from "../../lib/prisma.js";
 import { addMeetingStatusLog } from "../../http/modules/meeting/meeting.service.js";
-import { MEETING_POST_PROCESS_QUEUE } from "./meetingPostProcess.queue.js";
+import { MEETING_POST_PROCESS_QUEUE } from "./queue.js";
 import {
     stopTranscriptionSession,
     destroyMeetingContainer,
     indexMeetingTranscript,
     generateMeetingSummary,
-} from "./meetingPostProcess.utils.js";
+} from "./utils.js";
 import type { MeetingPostProcessJobData } from "./types.js";
 
 export async function processMeetingPostProcess(job: Job<MeetingPostProcessJobData>) {

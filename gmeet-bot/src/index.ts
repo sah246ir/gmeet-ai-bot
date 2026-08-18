@@ -2,7 +2,7 @@ import 'dotenv/config';
 import http from 'node:http';
 import { createApp } from './http/app.js';
 import { attachWebSocketServer } from './ws/server.js';
-import { meetingPostProcessWorker } from './queue/meeting-post-process/meetingPostProcess.worker.js';
+import { meetingPostProcessWorker } from './queue/meeting-post-process/worker.js';
 import { ENV } from './lib/ENV.js';
 import { TranscribeManager as TM } from './services/transcribe-manager/transcribeManager.js';
 
