@@ -29,42 +29,64 @@ function parseMessage(raw: string): SocketMessage | null {
   }
 }
 
+const RECONNECT_DELAY_MS = 2000
+
 /**
  * One WebSocket connection for the whole app, kept alive at the root so
  * status/transcript updates stay live regardless of which page is open.
  * Pushes updates directly into the existing react-query caches rather than
- * keeping separate local state.
+ * keeping separate local state. Reconnects automatically if the connection
+ * drops (backend restart, network blip, laptop sleep/wake) - without this,
+ * a dropped socket silently stops delivering live updates until the page is
+ * manually reloaded, leaving only the 4s poll as a fallback.
  */
 export function useSocket() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
-    const ws = new WebSocket(getWebSocketUrl())
+    let ws: WebSocket | null = null
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+    let stopped = false
 
-    ws.onmessage = (event) => {
-      const message = parseMessage(event.data)
-      if (!message) return
+    function connect() {
+      ws = new WebSocket(getWebSocketUrl())
 
-      if (message.type === 'live-transcript') {
-        queryClient.setQueryData<TranscriptSegment[]>(
-          ['meetings', message.meetingId, 'transcripts'],
-          (prev) => {
-            if (!prev) return prev
-            if (prev.some((segment) => segment.id === message.segment.id)) return prev
-            return [...prev, message.segment]
-          },
-        )
-        return
+      ws.onmessage = (event) => {
+        const message = parseMessage(event.data)
+        if (!message) return
+
+        if (message.type === 'live-transcript') {
+          queryClient.setQueryData<TranscriptSegment[]>(
+            ['meetings', message.meetingId, 'transcripts'],
+            (prev) => {
+              if (!prev) return prev
+              if (prev.some((segment) => segment.id === message.segment.id)) return prev
+              return [...prev, message.segment]
+            },
+          )
+          return
+        }
+
+        // A status change also means the meeting's jobs may have changed (e.g.
+        // it only reaches COMPLETED once its jobs are already done) - refetch
+        // the whole meeting rather than patching statusLogs in isolation, so
+        // jobs and statusLogs never end up telling two different stories.
+        queryClient.invalidateQueries({ queryKey: ['meetings', message.meetingId] })
+        queryClient.invalidateQueries({ queryKey: ['meetings'], exact: true })
       }
 
-      // A status change also means the meeting's jobs may have changed (e.g.
-      // it only reaches COMPLETED once its jobs are already done) - refetch
-      // the whole meeting rather than patching statusLogs in isolation, so
-      // jobs and statusLogs never end up telling two different stories.
-      queryClient.invalidateQueries({ queryKey: ['meetings', message.meetingId] })
-      queryClient.invalidateQueries({ queryKey: ['meetings'], exact: true })
+      ws.onclose = () => {
+        if (stopped) return
+        reconnectTimer = setTimeout(connect, RECONNECT_DELAY_MS)
+      }
     }
 
-    return () => ws.close()
+    connect()
+
+    return () => {
+      stopped = true
+      if (reconnectTimer) clearTimeout(reconnectTimer)
+      ws?.close()
+    }
   }, [queryClient])
 }
