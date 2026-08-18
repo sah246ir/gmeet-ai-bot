@@ -27,8 +27,8 @@ const STATUS_META: Record<MeetingEvent, StatusMeta> = {
     description: 'The bot is joining the Google Meet call.',
   },
   MEETING_PROCESSED: {
-    title: 'Recording',
-    description: 'The bot is in the meeting, capturing and transcribing the conversation.',
+    title: 'Bot is ready',
+    description: 'Bot is ready to listen.',
   },
   COMPLETED: {
     title: 'Meeting ready',
