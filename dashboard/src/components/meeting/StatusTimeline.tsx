@@ -1,8 +1,11 @@
 import { Card } from '../ui/Card'
 import { Spinner } from '../ui/Spinner'
+import { Accordion } from '../ui/Accordion'
+import { CheckIcon, ErrorIcon } from './StatusIcons'
+import { JobStatusList } from './JobStatusList'
 import { useElapsedSeconds } from '../../hooks/useElapsedSeconds'
 import { formatElapsed } from '../../mock/meetingDetail'
-import type { MeetingStatus, MeetingStatusLog } from '../../services/types'
+import type { Job, MeetingStatus, MeetingStatusLog } from '../../services/types'
 
 interface StatusMeta {
   title: string
@@ -54,22 +57,6 @@ function isLiveStatus(status: MeetingStatus): boolean {
   return LIVE_STATUSES.has(status)
 }
 
-function CheckIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
-      <path d="M3.5 8.5L6.5 11.5L12.5 4.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-function ErrorIcon({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 16 16" fill="none" className={className} aria-hidden="true">
-      <path d="M4.5 4.5L11.5 11.5M11.5 4.5L4.5 11.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  )
-}
-
 function StepIcon({ status, isCurrent }: { status: MeetingStatus; isCurrent: boolean }) {
   if (status === 'FAILED') {
     return (
@@ -93,9 +80,10 @@ function StepIcon({ status, isCurrent }: { status: MeetingStatus; isCurrent: boo
 interface StatusTimelineProps {
   logs: MeetingStatusLog[]
   startedAt: string
+  jobs: Job[]
 }
 
-export function StatusTimeline({ logs, startedAt }: StatusTimelineProps) {
+export function StatusTimeline({ logs, startedAt, jobs }: StatusTimelineProps) {
   const chronological = [...logs].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   )
@@ -106,39 +94,73 @@ export function StatusTimeline({ logs, startedAt }: StatusTimelineProps) {
   const baseline = new Date(startedAt).getTime()
   const liveElapsed = useElapsedSeconds(startedAt, isLatestLive)
 
+  const hasActiveJobs = jobs.some((job) => job.status === 'RUNNING' || job.status === 'PENDING')
+
   return (
     <Card className="p-6 sm:p-8">
-      <div className="space-y-0">
-        {chronological.map((log, index) => {
-          const meta = STATUS_META[log.status]
-          const isCurrent = log.id === latestId
-          const isLastRow = index === chronological.length - 1
-          const elapsedSeconds =
-            isCurrent && isLatestLive
-              ? liveElapsed
-              : Math.max(0, Math.floor((new Date(log.createdAt).getTime() - baseline) / 1000))
+      <Accordion
+        defaultOpen
+        bodyClassName="mt-6"
+        title={
+          <div className="flex items-center gap-2.5">
+            {(isLatestLive || hasActiveJobs) && (
+              <Spinner className="h-3.5 w-3.5 border-[1.5px] border-white/20 border-t-sky-400" />
+            )}
+            <p className="text-sm font-medium text-white/85">Meeting timeline</p>
+            {latest && <span className="text-xs text-white/35">{STATUS_META[latest.status].title}</span>}
+          </div>
+        }
+      >
+        <div className="space-y-0">
+          {chronological.map((log, index) => {
+            const meta = STATUS_META[log.status]
+            const isCurrent = log.id === latestId
+            const isLastRow = index === chronological.length - 1
+            const elapsedSeconds =
+              isCurrent && isLatestLive
+                ? liveElapsed
+                : Math.max(0, Math.floor((new Date(log.createdAt).getTime() - baseline) / 1000))
 
-          return (
-            <div key={log.id} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <StepIcon status={log.status} isCurrent={isCurrent} />
-                {!isLastRow && <div className="my-1 w-px flex-1 bg-white/[0.08]" />}
-              </div>
-              <div className={isLastRow ? 'min-w-0 flex-1 pb-1' : 'min-w-0 flex-1 pb-6'}>
-                <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
-                  <p className="text-sm font-medium text-white/85">{meta.title}</p>
-                  <span className="shrink-0 text-xs text-white/30">
-                    +{formatElapsed(elapsedSeconds)}
-                  </span>
+            return (
+              <div key={log.id} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <StepIcon status={log.status} isCurrent={isCurrent} />
+                  {!isLastRow && <div className="my-1 w-px flex-1 bg-white/[0.08]" />}
                 </div>
-                <p className="mt-0.5 text-xs leading-relaxed text-white/45">
-                  {log.status === 'FAILED' && log.error ? log.error : meta.description}
-                </p>
+                <div className={isLastRow ? 'min-w-0 flex-1 pb-1' : 'min-w-0 flex-1 pb-6'}>
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                    <p className="text-sm font-medium text-white/85">{meta.title}</p>
+                    <span className="shrink-0 text-xs text-white/30">
+                      +{formatElapsed(elapsedSeconds)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs leading-relaxed text-white/45">
+                    {log.status === 'FAILED' && log.error ? log.error : meta.description}
+                  </p>
+                  {log.status === 'PROCESSING_MEETING' && jobs.length > 0 && (
+                    <div className="mt-3">
+                      <Accordion
+                        defaultOpen
+                        bodyClassName="mt-2"
+                        title={
+                          <div className="flex items-center gap-2">
+                            {hasActiveJobs && (
+                              <Spinner className="h-3 w-3 border-[1.5px] border-white/20 border-t-sky-400" />
+                            )}
+                            <p className="text-xs font-medium text-white/40">Job status</p>
+                          </div>
+                        }
+                      >
+                        <JobStatusList jobs={jobs} />
+                      </Accordion>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      </Accordion>
     </Card>
   )
 }
