@@ -6,6 +6,7 @@ import {
     getOwnedMeetingOrNull,
     assertMeetingOwnership,
     getMeetingTranscripts,
+    getMeetingInsight,
     endMeeting,
 } from "./meeting.service.js";
 
@@ -56,6 +57,28 @@ export async function getMeetingTranscriptsHandler(req: Request, res: Response) 
 
     const transcripts = await getMeetingTranscripts(params.data.id);
     res.json(transcripts);
+}
+
+export async function getMeetingInsightHandler(req: Request, res: Response) {
+    const params = meetingIdParamsSchema.safeParse(req.params);
+
+    if (!params.success) {
+        return void res.status(400).json({ error: "invalid params" });
+    }
+
+    const owned = await assertMeetingOwnership(params.data.id, req.sessionToken!);
+
+    if (!owned) {
+        return void res.status(404).json({ error: "not found" });
+    }
+
+    const insight = await getMeetingInsight(params.data.id);
+
+    if (!insight) {
+        return void res.status(404).json({ error: "insight not available" });
+    }
+
+    res.json(insight);
 }
 
 export async function endMeetingHandler(req: Request, res: Response) {

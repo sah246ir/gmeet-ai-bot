@@ -98,6 +98,10 @@ export async function getMeetingTranscripts(meetingId: string) {
     });
 }
 
+export async function getMeetingInsight(meetingId: string) {
+    return prisma.meetingInsight.findUnique({ where: { meetingId } });
+}
+
 export function endMeeting(meetingId: string): void {
     broadcast({ type: "meeting-end", meetingId });
 }
