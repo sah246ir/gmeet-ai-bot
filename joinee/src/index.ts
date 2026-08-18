@@ -15,12 +15,6 @@ async function main() {
         })
     )
     const meeting = await joinMeeting(ENV.MEETING_URL);
-    ws.send(
-        JSON.stringify({
-            type: "meeting-waiting",
-            meetingId: ENV.MEETING_ID,
-        })
-    )
     await waitForMeetingEntry(meeting.page)
     ws.send(
         JSON.stringify({
