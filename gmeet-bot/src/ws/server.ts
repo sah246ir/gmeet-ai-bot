@@ -16,7 +16,7 @@ export function attachWebSocketServer(httpServer: HttpServer) {
       const parsedData = WSEventSchema.safeParse(eventData)
       if(parsedData.error){
         console.log(parsedData.error)
-        throw Error()
+        return
       }
       
       const finaldata = parsedData.data
