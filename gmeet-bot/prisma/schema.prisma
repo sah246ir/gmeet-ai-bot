@@ -7,26 +7,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum JobStatus {
-  PENDING
-  RUNNING
-  COMPLETED
-  FAILED
-}
-enum JobType {
+enum MeetingEvent {
+  STARTING
+  CREATING_JOINEE_BOT
+  JOINING_MEETING
+  WAITING_FOR_ENTRY
+  MEETING_PROCESSED
   PROCESS_TRANSCRIPT
   GENERATE_EMBEDDINGS
   INDEX_PINECONE
   GENERATE_SUMMARY
   EXTRACT_ACTION_ITEMS
-}
-enum MeetingStatus {
-  STARTING
-  CREATING_JOINEE_BOT
-  JOINING_MEETING
-  MEETING_PROCESSED
-  PROCESSING_MEETING
   COMPLETED
+  FAILED
+}
+
+enum MeetingLogStatus {
+  PENDING
+  FAILED
+  SUCCESS
+}
+
+enum MeetingState {
+  PENDING
+  DONE
   FAILED
 }
 
@@ -36,10 +40,12 @@ model Meeting {
   containerId       String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  jobs      Job[]
   transcriptSegments      TranscriptSegment[]
   statusLogs MeetingStatusLog[]
   insight   MeetingInsight?
+
+  state       MeetingState @default(PENDING)
+  completedAt DateTime?
 
   sessionToken String
   session      Session  @relation(fields: [sessionToken], references: [token])
@@ -66,17 +72,20 @@ model MeetingInsight {
 }
 
 model MeetingStatusLog {
-  id        String        @id @default(cuid())
+  id           String           @id @default(cuid())
 
-  meetingId String
-  meeting   Meeting       @relation(fields: [meetingId], references: [id])
+  meetingId    String
+  meeting      Meeting          @relation(fields: [meetingId], references: [id])
 
-  status    MeetingStatus
-  error     String?
+  event        MeetingEvent
+  status       MeetingLogStatus @default(SUCCESS)
+  error        String?
 
-  createdAt DateTime      @default(now())
+  createdAt    DateTime         @default(now())
+  closingState DateTime?
 
   @@index([meetingId, createdAt])
+  @@index([meetingId, event, createdAt])
 }
 
 model TranscriptSegment {
@@ -103,19 +112,4 @@ model Session {
   createdAt DateTime @default(now())
   expiresAt DateTime
   meetings  Meeting[]
-}
-
-model Job {
-  id        String    @id @default(cuid())
-  meetingId String
-  meeting   Meeting   @relation(fields: [meetingId], references: [id])
-
-  type      JobType
-  status    JobStatus @default(PENDING)
-  error     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([meetingId, type])
 }

@@ -1,7 +1,8 @@
 import { prisma } from "../../../lib/prisma.js";
-import { MeetingStatus } from "@prisma/client";
+import { MeetingEvent, MeetingLogStatus } from "@prisma/client";
 import { dockerService } from "../../../services/docker/docker.js";
 import { broadcast } from "../../../index.js";
+import { updateMeetingLogStatus } from "./meeting.utils.js";
 
 export async function createMeeting(sessionToken: string, url: string) {
     const meeting = await prisma.meeting.create({
@@ -9,13 +10,13 @@ export async function createMeeting(sessionToken: string, url: string) {
             url,
             sessionToken,
             statusLogs: {
-                create: { status: MeetingStatus.STARTING },
+                create: { event: MeetingEvent.STARTING },
             },
         },
     });
 
     try {
-        await addMeetingStatusLog(meeting.id, MeetingStatus.CREATING_JOINEE_BOT);
+        await addMeetingEvent(meeting.id, MeetingEvent.CREATING_JOINEE_BOT);
 
         const { containerId } = await dockerService.createContainer({
             meetingId: meeting.id,
@@ -25,19 +26,23 @@ export async function createMeeting(sessionToken: string, url: string) {
         await setMeetingContainerId(meeting.id, containerId);
     } catch (error) {
         console.log(error)
-        await addMeetingStatusLog(
+        await addMeetingEvent(
             meeting.id,
-            MeetingStatus.FAILED,
+            MeetingEvent.FAILED,
+            "FAILED",
             error instanceof Error ? error.message : "failed to create sandbox container",
         );
     }
     return (await getOwnedMeetingOrNull(meeting.id, sessionToken))!;
 }
 
-export async function addMeetingStatusLog(meetingId: string, status: MeetingStatus, error?: string) {
-    const statusLog = await prisma.meetingStatusLog.create({
-        data: { meetingId, status, error },
-    });
+export async function addMeetingEvent(
+    meetingId: string,
+    event: MeetingEvent,
+    status: MeetingLogStatus = "SUCCESS",
+    error?: string,
+) {
+    const statusLog = await updateMeetingLogStatus(meetingId, event, status, error);
     broadcast({ type: "meeting-status", meetingId, statusLog });
     return statusLog;
 }
@@ -54,9 +59,11 @@ export async function listMeetingsForSession(sessionToken: string) {
         where: { sessionToken },
         orderBy: { createdAt: "desc" },
         include: {
+            // No `take` limit: the frontend needs enough rows to skip past
+            // job-type events (INDEX_PINECONE, GENERATE_SUMMARY, ...) to find
+            // the latest *lifecycle* event, not just the single latest row.
             statusLogs: {
                 orderBy: { createdAt: "desc" },
-                take: 1,
             },
         },
     });
@@ -66,7 +73,6 @@ export async function getOwnedMeetingOrNull(meetingId: string, sessionToken: str
     const meeting = await prisma.meeting.findUnique({
         where: { id: meetingId },
         include: {
-            jobs: true,
             statusLogs: { orderBy: { createdAt: "desc" } },
         },
     });
