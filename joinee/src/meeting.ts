@@ -100,6 +100,32 @@ export async function joinMeeting(meetingUrl: string) {
         page,
     };
 }
+// After clicking "Join now"/"Ask to join", Google Meet may hold the bot in a
+// waiting room until the host lets it in. Poll for the waiting-room copy to
+// disappear before treating the bot as actually in the call - for "Join now"
+// (no approval needed) this resolves on the very first check.
+export async function waitForMeetingEntry(page: Page, timeoutMs = 5 * 60 * 1000): Promise<void> {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+        if (page.isClosed()) return;
+
+        const bodyText = await page.locator("body").innerText().catch(() => "");
+        const stillWaiting =
+            bodyText.includes("Asking to be let in") ||
+            bodyText.includes("You'll join the call when someone lets you in") ||
+            bodyText.includes("Waiting for the host to let you in") ||
+            bodyText.includes("Waiting for someone to let you in");
+            bodyText.includes("Please wait until a meeting host brings you into the call");
+
+        if (!stillWaiting) return;
+
+        await page.waitForTimeout(2000);
+    }
+
+    throw new Error("Timed out waiting to be admitted to the meeting");
+}
+
 export async function waitUntilMeetingEnds({
     page,
     browser,

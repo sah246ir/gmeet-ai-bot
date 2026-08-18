@@ -1,4 +1,4 @@
-import { joinMeeting, waitUntilMeetingEnds } from './meeting.js';
+import { joinMeeting, waitForMeetingEntry, waitUntilMeetingEnds } from './meeting.js';
 import { handleAudioData, startAudioCapture } from './audio.js';
 import { ENV } from './ENV.js';
 import { initializeWebsocket } from './streamer.js';
@@ -15,6 +15,13 @@ async function main() {
         })
     )
     const meeting = await joinMeeting(ENV.MEETING_URL);
+    ws.send(
+        JSON.stringify({
+            type: "meeting-waiting",
+            meetingId: ENV.MEETING_ID,
+        })
+    )
+    await waitForMeetingEntry(meeting.page)
     ws.send(
         JSON.stringify({
             type: "meeting-joined",
