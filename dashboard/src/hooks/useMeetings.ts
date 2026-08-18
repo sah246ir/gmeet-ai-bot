@@ -3,6 +3,7 @@ import {
   createMeeting,
   endMeeting,
   getMeeting,
+  getMeetingInsight,
   getMeetingTranscripts,
   listMeetings,
 } from '../services/meeting/meeting.service'
@@ -33,6 +34,14 @@ export function useMeetingTranscripts(meetingId: string | undefined, enabled: bo
     queryFn: () => getMeetingTranscripts(meetingId!),
     enabled: !!meetingId && enabled,
     refetchInterval: live ? 4000 : false,
+  })
+}
+
+export function useMeetingInsight(meetingId: string | undefined, enabled: boolean) {
+  return useQuery({
+    queryKey: ['meetings', meetingId, 'insights'],
+    queryFn: () => getMeetingInsight(meetingId!),
+    enabled: !!meetingId && enabled,
   })
 }
 

@@ -3,6 +3,7 @@ import type {
   CreateMeetingRequest,
   MeetingCreated,
   MeetingDetail,
+  MeetingInsight,
   MeetingListItem,
   TranscriptSegment,
 } from './meeting.types'
@@ -24,6 +25,11 @@ export async function getMeeting(meetingId: string): Promise<MeetingDetail> {
 
 export async function getMeetingTranscripts(meetingId: string): Promise<TranscriptSegment[]> {
   const { data } = await api.get<TranscriptSegment[]>(`/meetings/${meetingId}/transcripts`)
+  return data
+}
+
+export async function getMeetingInsight(meetingId: string): Promise<MeetingInsight> {
+  const { data } = await api.get<MeetingInsight>(`/meetings/${meetingId}/insights`)
   return data
 }
 

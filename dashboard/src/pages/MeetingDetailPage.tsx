@@ -10,17 +10,29 @@ import { MeetingHeader } from '../components/meeting/MeetingHeader'
 import { StatusTimeline } from '../components/meeting/StatusTimeline'
 import { AskMeeting } from '../components/meeting/AskMeeting'
 import { TranscriptList, type TranscriptState } from '../components/meeting/TranscriptList'
-import { MeetingSummary } from '../components/meeting/MeetingSummary'
-import { useEndMeeting, useMeeting, useMeetingTranscripts } from '../hooks/useMeetings'
+import { MeetingSummary, type SummaryState } from '../components/meeting/MeetingSummary'
+import { useEndMeeting, useMeeting, useMeetingInsight, useMeetingTranscripts } from '../hooks/useMeetings'
 import { useEnsureSession } from '../hooks/useSession'
 import {
   deriveMeetingTitle,
   latestStatus,
   toLifecycleStatus,
 } from '../lib/meetingDisplay'
-import { formatElapsed, type SummaryData } from '../mock/meetingDetail'
+import { formatElapsed } from '../mock/meetingDetail'
+import type { MeetingInsight } from '../services/meeting/meeting.types'
 
-const EMPTY_SUMMARY: SummaryData = { overview: '', keyPoints: [], decisions: [], actionItems: [] }
+const EMPTY_INSIGHT: MeetingInsight = {
+  id: '',
+  meetingId: '',
+  overview: '',
+  keyPoints: [],
+  decisions: [],
+  actionItems: [],
+  speakerCount: 0,
+  speakers: [],
+  createdAt: '',
+  updatedAt: '',
+}
 
 function BackgroundGlow() {
   return (
@@ -37,6 +49,9 @@ export function MeetingDetailPage() {
   const meeting = meetingQuery.data
   const status = meeting ? latestStatus(meeting.statusLogs) : undefined
   const hasEnded = status === 'COMPLETED' || status === 'PROCESSING_MEETING'
+
+  const summaryJob = meeting?.jobs.find((job) => job.type === 'GENERATE_SUMMARY')
+  const insightQuery = useMeetingInsight(meetingId, summaryJob?.status === 'COMPLETED')
 
   const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting, !hasEnded)
   const endMeeting = useEndMeeting(meetingId)
@@ -75,6 +90,18 @@ export function MeetingDetailPage() {
 
   const lifecycleStatus = toLifecycleStatus(status!)
 
+  const summaryState: SummaryState = !summaryJob
+    ? 'locked'
+    : summaryJob.status === 'FAILED'
+      ? 'error'
+      : summaryJob.status !== 'COMPLETED'
+        ? 'processing'
+        : insightQuery.isError
+          ? 'error'
+          : insightQuery.data
+            ? 'completed'
+            : 'processing'
+
   const transcriptState: TranscriptState = transcriptsQuery.isLoading
     ? 'loading'
     : transcriptsQuery.isError
@@ -112,8 +139,19 @@ export function MeetingDetailPage() {
             />
           </div>
 
-          <div className="mt-6">
-            <StatusTimeline logs={meeting.statusLogs} startedAt={meeting.createdAt} />
+          <section className="mt-10">
+            <SectionHeader title="Meeting Insights" />
+            <div className="mt-6">
+              <MeetingSummary
+                state={summaryState}
+                summary={insightQuery.data ?? EMPTY_INSIGHT}
+                onRetry={() => insightQuery.refetch()}
+              />
+            </div>
+          </section>
+
+          <div className="mt-10">
+            <StatusTimeline logs={meeting.statusLogs} startedAt={meeting.createdAt} jobs={meeting.jobs} />
           </div>
 
           <section className="mt-16">
@@ -126,26 +164,17 @@ export function MeetingDetailPage() {
             </div>
           </section>
 
-          <div className="mt-16 grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <SectionHeader title="Transcript" description="Live conversation" />
-              <div className="mt-6">
-                <TranscriptList
-                  state={transcriptState}
-                  segments={segments}
-                  isLive={lifecycleStatus === 'recording'}
-                  onRetry={() => transcriptsQuery.refetch()}
-                />
-              </div>
+          <section className="mt-16">
+            <SectionHeader title="Transcript" description="Live conversation" />
+            <div className="mt-6">
+              <TranscriptList
+                state={transcriptState}
+                segments={segments}
+                isLive={lifecycleStatus === 'recording'}
+                onRetry={() => transcriptsQuery.refetch()}
+              />
             </div>
-
-            <div className="lg:col-span-1">
-              <SectionHeader title="Meeting Summary" />
-              <div className="mt-6">
-                <MeetingSummary state="locked" summary={EMPTY_SUMMARY} />
-              </div>
-            </div>
-          </div>
+          </section>
         </Container>
       </main>
 

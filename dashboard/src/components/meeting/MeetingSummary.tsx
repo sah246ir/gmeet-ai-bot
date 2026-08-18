@@ -4,7 +4,7 @@ import { Skeleton } from '../ui/Skeleton'
 import { ErrorState } from '../dashboard/ErrorState'
 import { SummarySection } from './SummarySection'
 import { ActionItem } from './ActionItem'
-import type { SummaryData } from '../../mock/meetingDetail'
+import type { MeetingInsight } from '../../services/meeting/meeting.types'
 
 export type SummaryState = 'locked' | 'processing' | 'completed' | 'error'
 
@@ -19,7 +19,7 @@ function LockIcon({ className = '' }: { className?: string }) {
 
 interface MeetingSummaryProps {
   state: SummaryState
-  summary: SummaryData
+  summary: MeetingInsight
   onRetry?: () => void
 }
 
@@ -99,6 +99,22 @@ export function MeetingSummary({ state, summary, onRetry }: MeetingSummaryProps)
           ))}
         </div>
       </SummarySection>
+
+      {summary.speakers.length > 0 && (
+        <SummarySection title={`Speakers (${summary.speakerCount})`}>
+          <div className="space-y-2">
+            {summary.speakers.map((speaker) => (
+              <div
+                key={speaker.label}
+                className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-3"
+              >
+                <p className="text-sm font-medium text-white/80">{speaker.label}</p>
+                {speaker.note && <p className="mt-0.5 text-sm text-white/45">{speaker.note}</p>}
+              </div>
+            ))}
+          </div>
+        </SummarySection>
+      )}
 
       <SummarySection title="Action items">
         <div className="space-y-2">

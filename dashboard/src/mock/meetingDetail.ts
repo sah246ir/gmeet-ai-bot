@@ -7,13 +7,6 @@ export interface TranscriptSegment {
   text: string
 }
 
-export interface SummaryData {
-  overview: string
-  keyPoints: string[]
-  decisions: { title: string; description: string }[]
-  actionItems: { owner: string; task: string; due: string }[]
-}
-
 export function formatElapsed(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
