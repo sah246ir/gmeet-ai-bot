@@ -61,6 +61,42 @@ whatever audio the meeting tab is playing through a virtual audio device, stream
 the backend in small chunks as the meeting happens, and watches the call for signs it
 has ended so it can wrap up and shut itself down.
 
+## Technical challenges
+
+### Scaling live transcription
+
+The joinee containers are completely stateless by design — they handle the browser
+session and stream audio back to the API server over WebSocket. The API server
+currently owns `TranscribeManager`, an in-memory map from meeting ID to that meeting's
+live Deepgram connection.
+
+That works fine at the current scale, but as the number of concurrent meetings grows,
+the API server becomes responsible for an increasing number of long-lived connections
+and in-memory state. Deepgram client objects can't simply be moved into Redis either —
+they're live connections tied to a specific process, not serializable state.
+
+The plan for scaling this is to separate the API server from the transcription
+workers. The API server stays responsible for the application and durable state;
+dedicated transcription workers own the live Deepgram connections instead. Redis acts
+as the coordination layer — mapping a meeting to its assigned worker and tracking
+worker health — while each worker keeps its own in-memory mapping of meeting IDs to
+live Deepgram connections. That lets the transcription layer scale horizontally by
+adding more workers, while the joinee containers stay exactly as stateless as they are
+today.
+
+### Reliable browser automation
+
+Google Meet has a highly dynamic UI, so relying on explicit delays — "wait five
+seconds, then click" — is easy to break: network conditions and meeting state vary, so
+a fixed delay doesn't guarantee an element is actually ready.
+
+Joinee instead uses Playwright's native waiting and locator utilities to wait for
+specific UI conditions, such as an element becoming visible or actionable. Rather than
+assuming a "Join now" button will appear after five seconds, it waits for the actual
+button and fails early if neither "Join now" nor "Ask to join" appears within the
+expected timeout. That makes the automation deterministic and resilient to timing
+differences, instead of quietly racing the page.
+
 ## Local setup
 
 The fastest way to get everything running is Docker Compose, from the repo root:
