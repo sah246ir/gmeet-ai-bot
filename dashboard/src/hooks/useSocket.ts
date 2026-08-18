@@ -2,7 +2,6 @@ import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { getWebSocketUrl } from '../lib/ws'
 import type { MeetingStatusLog, TranscriptSegment } from '../services/types'
-import type { MeetingDetail, MeetingListItem } from '../services/meeting/meeting.types'
 
 interface LiveTranscriptMessage {
   type: 'live-transcript'
@@ -58,19 +57,12 @@ export function useSocket() {
         return
       }
 
-      queryClient.setQueryData<MeetingDetail>(['meetings', message.meetingId], (prev) =>
-        prev ? { ...prev, statusLogs: [message.statusLog, ...prev.statusLogs] } : prev,
-      )
-
-      queryClient.setQueryData<MeetingListItem[]>(['meetings'], (prev) =>
-        prev
-          ? prev.map((meeting) =>
-              meeting.id === message.meetingId
-                ? { ...meeting, statusLogs: [message.statusLog] }
-                : meeting,
-            )
-          : prev,
-      )
+      // A status change also means the meeting's jobs may have changed (e.g.
+      // it only reaches COMPLETED once its jobs are already done) - refetch
+      // the whole meeting rather than patching statusLogs in isolation, so
+      // jobs and statusLogs never end up telling two different stories.
+      queryClient.invalidateQueries({ queryKey: ['meetings', message.meetingId] })
+      queryClient.invalidateQueries({ queryKey: ['meetings'], exact: true })
     }
 
     return () => ws.close()
