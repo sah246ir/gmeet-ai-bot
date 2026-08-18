@@ -39,11 +39,30 @@ model Meeting {
   jobs      Job[]
   transcriptSegments      TranscriptSegment[]
   statusLogs MeetingStatusLog[]
+  insight   MeetingInsight?
 
   sessionToken String
   session      Session  @relation(fields: [sessionToken], references: [token])
 
   @@index([sessionToken])
+}
+
+model MeetingInsight {
+  id        String   @id @default(cuid())
+
+  meetingId String   @unique
+  meeting   Meeting  @relation(fields: [meetingId], references: [id])
+
+  overview     String
+  keyPoints    Json
+  decisions    Json
+  actionItems  Json
+
+  speakerCount Int
+  speakers     Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model MeetingStatusLog {
@@ -98,5 +117,5 @@ model Job {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([meetingId, type])
+  @@unique([meetingId, type])
 }
