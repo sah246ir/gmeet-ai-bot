@@ -2,7 +2,7 @@ import 'dotenv/config';
 import http from 'node:http';
 import { createApp } from './http/app.js';
 import { attachWebSocketServer } from './ws/server.js';
-import './queue/transcribe-chunker/transcribeChunker.worker.js';
+import { meetingPostProcessWorker } from './queue/meeting-post-process/meetingPostProcess.worker.js';
 import { ENV } from './lib/ENV.js';
 import { TranscribeManager as TM } from './services/transcribe-manager/transcribeManager.js';
 
@@ -19,6 +19,7 @@ const shutdown = async () => {
     console.log("Shutting down...");
 
     await TranscribeManager.stopAll();
+    await meetingPostProcessWorker.close();
 
     server.close(() => {
         console.log("HTTP server closed");
