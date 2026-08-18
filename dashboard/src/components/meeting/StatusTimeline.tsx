@@ -26,10 +26,6 @@ const STATUS_META: Record<MeetingEvent, StatusMeta> = {
     title: 'Joining meeting',
     description: 'The bot is joining the Google Meet call.',
   },
-  WAITING_FOR_ENTRY: {
-    title: 'Waiting to join',
-    description: 'Waiting for someone in the call to let the bot in.',
-  },
   MEETING_PROCESSED: {
     title: 'Recording',
     description: 'The bot is in the meeting, capturing and transcribing the conversation.',
@@ -60,7 +56,6 @@ const LIVE_EVENTS = new Set<MeetingEvent>([
   'STARTING',
   'CREATING_JOINEE_BOT',
   'JOINING_MEETING',
-  'WAITING_FOR_ENTRY',
   'MEETING_PROCESSED',
 ])
 

@@ -30,7 +30,6 @@ export function toDashboardStatus(statusLogs: MeetingStatusLog[]): MeetingStatus
     case 'STARTING':
     case 'CREATING_JOINEE_BOT':
     case 'JOINING_MEETING':
-    case 'WAITING_FOR_ENTRY':
       return 'joining'
     case 'MEETING_PROCESSED':
       return isProcessing ? 'processing' : 'active'
@@ -51,7 +50,6 @@ export function toLifecycleStatus(statusLogs: MeetingStatusLog[]): MeetingLifecy
     case 'STARTING':
     case 'CREATING_JOINEE_BOT':
     case 'JOINING_MEETING':
-    case 'WAITING_FOR_ENTRY':
       return 'joining'
     case 'MEETING_PROCESSED':
       return isProcessing ? 'processing' : 'recording'
