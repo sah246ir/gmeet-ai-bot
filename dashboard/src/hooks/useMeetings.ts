@@ -7,7 +7,7 @@ import {
   getMeetingTranscripts,
   listMeetings,
 } from '../services/meeting/meeting.service'
-import { isTerminalStatus, latestStatus } from '../lib/meetingDisplay'
+import { isTerminalStatus } from '../lib/meetingDisplay'
 
 export function useMeetings() {
   return useQuery({
@@ -23,7 +23,7 @@ export function useMeeting(meetingId: string | undefined) {
     enabled: !!meetingId,
     refetchInterval: (query) => {
       const data = query.state.data
-      return data && isTerminalStatus(latestStatus(data.statusLogs)) ? false : 4000
+      return data && isTerminalStatus(data.state) ? false : 4000
     },
   })
 }

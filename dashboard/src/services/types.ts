@@ -1,20 +1,20 @@
-export type MeetingStatus =
+export type MeetingEvent =
   | 'STARTING'
   | 'CREATING_JOINEE_BOT'
   | 'JOINING_MEETING'
+  | 'WAITING_FOR_ENTRY'
   | 'MEETING_PROCESSED'
-  | 'PROCESSING_MEETING'
-  | 'COMPLETED'
-  | 'FAILED'
-
-export type JobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED'
-
-export type JobType =
   | 'PROCESS_TRANSCRIPT'
   | 'GENERATE_EMBEDDINGS'
   | 'INDEX_PINECONE'
   | 'GENERATE_SUMMARY'
   | 'EXTRACT_ACTION_ITEMS'
+  | 'COMPLETED'
+  | 'FAILED'
+
+export type MeetingLogStatus = 'PENDING' | 'FAILED' | 'SUCCESS'
+
+export type MeetingState = 'PENDING' | 'DONE' | 'FAILED'
 
 export interface Meeting {
   id: string
@@ -22,24 +22,18 @@ export interface Meeting {
   createdAt: string
   updatedAt: string
   sessionToken: string
+  state: MeetingState
+  completedAt: string | null
 }
 
 export interface MeetingStatusLog {
   id: string
   meetingId: string
-  status: MeetingStatus
+  event: MeetingEvent
+  status: MeetingLogStatus
   error: string | null
   createdAt: string
-}
-
-export interface Job {
-  id: string
-  meetingId: string
-  type: JobType
-  status: JobStatus
-  error: string | null
-  createdAt: string
-  updatedAt: string
+  closingState: string | null
 }
 
 export interface TranscriptWord {

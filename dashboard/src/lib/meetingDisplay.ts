@@ -1,9 +1,20 @@
-import type { MeetingStatus, MeetingStatusLog } from '../services/types'
+import type { MeetingEvent, MeetingState, MeetingStatusLog } from '../services/types'
 import type { MeetingStatusType } from '../components/dashboard/MeetingStatus'
 import type { MeetingLifecycleStatus } from '../mock/meetingDetail'
 
-export function latestStatus(statusLogs: MeetingStatusLog[]): MeetingStatus {
-  return statusLogs[0]?.status ?? 'STARTING'
+// Job-type events interleave with lifecycle events in the same statusLogs
+// array now, so anything wanting "the current lifecycle stage" needs to skip
+// past them.
+export const JOB_EVENTS = new Set<MeetingEvent>([
+  'PROCESS_TRANSCRIPT',
+  'GENERATE_EMBEDDINGS',
+  'INDEX_PINECONE',
+  'GENERATE_SUMMARY',
+  'EXTRACT_ACTION_ITEMS',
+])
+
+export function latestLifecycleEvent(statusLogs: MeetingStatusLog[]): MeetingEvent {
+  return statusLogs.find((log) => !JOB_EVENTS.has(log.event))?.event ?? 'STARTING'
 }
 
 export function deriveMeetingTitle(url: string): string {
@@ -11,46 +22,54 @@ export function deriveMeetingTitle(url: string): string {
   return match ? `Meeting ${match[1]}` : 'Google Meet'
 }
 
-export function toDashboardStatus(status: MeetingStatus): MeetingStatusType {
-  switch (status) {
+export function toDashboardStatus(statusLogs: MeetingStatusLog[]): MeetingStatusType {
+  const latest = latestLifecycleEvent(statusLogs)
+  const isProcessing = statusLogs.some((log) => JOB_EVENTS.has(log.event))
+
+  switch (latest) {
     case 'STARTING':
     case 'CREATING_JOINEE_BOT':
     case 'JOINING_MEETING':
+    case 'WAITING_FOR_ENTRY':
       return 'joining'
     case 'MEETING_PROCESSED':
-      return 'active'
-    case 'PROCESSING_MEETING':
-      return 'processing'
+      return isProcessing ? 'processing' : 'active'
     case 'COMPLETED':
       return 'ready'
     case 'FAILED':
       return 'failed'
+    default:
+      return 'joining'
   }
 }
 
-export function toLifecycleStatus(status: MeetingStatus): MeetingLifecycleStatus {
-  switch (status) {
+export function toLifecycleStatus(statusLogs: MeetingStatusLog[]): MeetingLifecycleStatus {
+  const latest = latestLifecycleEvent(statusLogs)
+  const isProcessing = statusLogs.some((log) => JOB_EVENTS.has(log.event))
+
+  switch (latest) {
     case 'STARTING':
     case 'CREATING_JOINEE_BOT':
     case 'JOINING_MEETING':
+    case 'WAITING_FOR_ENTRY':
       return 'joining'
     case 'MEETING_PROCESSED':
-      return 'recording'
-    case 'PROCESSING_MEETING':
-      return 'processing'
+      return isProcessing ? 'processing' : 'recording'
     case 'COMPLETED':
       return 'completed'
     case 'FAILED':
       return 'failed'
+    default:
+      return 'joining'
   }
 }
 
-export function isActiveMeeting(status: MeetingStatus): boolean {
-  return status !== 'COMPLETED'
+export function isActiveMeeting(state: MeetingState): boolean {
+  return state === 'PENDING'
 }
 
-export function isTerminalStatus(status: MeetingStatus | undefined): boolean {
-  return status === 'COMPLETED' || status === 'FAILED'
+export function isTerminalStatus(state: MeetingState | undefined): boolean {
+  return state !== undefined && state !== 'PENDING'
 }
 
 export function formatElapsedSince(iso: string): string {

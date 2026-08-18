@@ -5,14 +5,15 @@ import { CheckIcon, ErrorIcon } from './StatusIcons'
 import { JobStatusList } from './JobStatusList'
 import { useElapsedSeconds } from '../../hooks/useElapsedSeconds'
 import { formatElapsed } from '../../mock/meetingDetail'
-import type { Job, MeetingStatus, MeetingStatusLog } from '../../services/types'
+import { JOB_EVENTS } from '../../lib/meetingDisplay'
+import type { MeetingEvent, MeetingStatusLog } from '../../services/types'
 
 interface StatusMeta {
   title: string
   description: string
 }
 
-const STATUS_META: Record<MeetingStatus, StatusMeta> = {
+const STATUS_META: Record<MeetingEvent, StatusMeta> = {
   STARTING: {
     title: 'Meeting started',
     description: 'Memora received the request to bring in this meeting.',
@@ -25,13 +26,13 @@ const STATUS_META: Record<MeetingStatus, StatusMeta> = {
     title: 'Joining meeting',
     description: 'The bot is joining the Google Meet call.',
   },
+  WAITING_FOR_ENTRY: {
+    title: 'Waiting to join',
+    description: 'Waiting for someone in the call to let the bot in.',
+  },
   MEETING_PROCESSED: {
     title: 'Recording',
     description: 'The bot is in the meeting, capturing and transcribing the conversation.',
-  },
-  PROCESSING_MEETING: {
-    title: 'Processing transcript',
-    description: 'Preparing the transcript and meeting knowledge.',
   },
   COMPLETED: {
     title: 'Meeting ready',
@@ -41,24 +42,34 @@ const STATUS_META: Record<MeetingStatus, StatusMeta> = {
     title: 'Failed',
     description: 'Something went wrong while processing this meeting.',
   },
+  // Job-type events never render in the main timeline (filtered into the
+  // nested job accordion instead) - these only exist so the Record above is
+  // exhaustive over every MeetingEvent value.
+  PROCESS_TRANSCRIPT: { title: 'Processing transcript', description: '' },
+  GENERATE_EMBEDDINGS: { title: 'Generating embeddings', description: '' },
+  INDEX_PINECONE: { title: 'Indexing transcript', description: '' },
+  GENERATE_SUMMARY: { title: 'Generating summary', description: '' },
+  EXTRACT_ACTION_ITEMS: { title: 'Extracting action items', description: '' },
 }
 
-// Statuses where the meeting/bot is still live - only these get a spinning
-// indicator. Once the call itself has ended (processing onward), every step
-// shows a tick, never a moving loader.
-const LIVE_STATUSES = new Set<MeetingStatus>([
+// Lifecycle events where there's still work in flight - only these get a
+// spinning indicator while they're the current step. MEETING_PROCESSED stays
+// current (and spinning) for the whole recording *and* background-processing
+// window, since no further lifecycle event is logged until COMPLETED/FAILED.
+const LIVE_EVENTS = new Set<MeetingEvent>([
   'STARTING',
   'CREATING_JOINEE_BOT',
   'JOINING_MEETING',
+  'WAITING_FOR_ENTRY',
   'MEETING_PROCESSED',
 ])
 
-function isLiveStatus(status: MeetingStatus): boolean {
-  return LIVE_STATUSES.has(status)
+function isLiveEvent(event: MeetingEvent): boolean {
+  return LIVE_EVENTS.has(event)
 }
 
-function StepIcon({ status, isCurrent }: { status: MeetingStatus; isCurrent: boolean }) {
-  if (status === 'FAILED') {
+function StepIcon({ event, isCurrent }: { event: MeetingEvent; isCurrent: boolean }) {
+  if (event === 'FAILED') {
     return (
       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-400/10 text-red-400">
         <ErrorIcon className="h-3 w-3" />
@@ -66,7 +77,7 @@ function StepIcon({ status, isCurrent }: { status: MeetingStatus; isCurrent: boo
     )
   }
 
-  if (isCurrent && isLiveStatus(status)) {
+  if (isCurrent && isLiveEvent(event)) {
     return <Spinner className="h-6 w-6 border-2 border-white/15 border-t-sky-400" />
   }
 
@@ -80,21 +91,28 @@ function StepIcon({ status, isCurrent }: { status: MeetingStatus; isCurrent: boo
 interface StatusTimelineProps {
   logs: MeetingStatusLog[]
   startedAt: string
-  jobs: Job[]
 }
 
-export function StatusTimeline({ logs, startedAt, jobs }: StatusTimelineProps) {
-  const chronological = [...logs].sort(
+export function StatusTimeline({ logs, startedAt }: StatusTimelineProps) {
+  const lifecycleLogs = logs.filter((log) => !JOB_EVENTS.has(log.event))
+  const chronological = [...lifecycleLogs].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   )
   const latest = chronological[chronological.length - 1]
   const latestId = latest?.id
-  const isLatestLive = latest ? isLiveStatus(latest.status) : false
+  const isLatestLive = latest ? isLiveEvent(latest.event) : false
 
   const baseline = new Date(startedAt).getTime()
   const liveElapsed = useElapsedSeconds(startedAt, isLatestLive)
 
-  const hasActiveJobs = jobs.some((job) => job.status === 'RUNNING' || job.status === 'PENDING')
+  // Job-type rows, reduced to the latest row per event type (chronological
+  // Map insertion order keeps them in the order each step first started).
+  const latestJobByEvent = new Map<MeetingEvent, MeetingStatusLog>()
+  for (const log of [...logs].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())) {
+    if (JOB_EVENTS.has(log.event)) latestJobByEvent.set(log.event, log)
+  }
+  const jobRows = Array.from(latestJobByEvent.values())
+  const hasActiveJobs = jobRows.some((log) => log.status === 'PENDING')
 
   return (
     <Card className="p-6 sm:p-8">
@@ -107,13 +125,13 @@ export function StatusTimeline({ logs, startedAt, jobs }: StatusTimelineProps) {
               <Spinner className="h-3.5 w-3.5 border-[1.5px] border-white/20 border-t-sky-400" />
             )}
             <p className="text-sm font-medium text-white/85">Meeting timeline</p>
-            {latest && <span className="text-xs text-white/35">{STATUS_META[latest.status].title}</span>}
+            {latest && <span className="text-xs text-white/35">{STATUS_META[latest.event].title}</span>}
           </div>
         }
       >
         <div className="space-y-0">
           {chronological.map((log, index) => {
-            const meta = STATUS_META[log.status]
+            const meta = STATUS_META[log.event]
             const isCurrent = log.id === latestId
             const isLastRow = index === chronological.length - 1
             const elapsedSeconds =
@@ -124,7 +142,7 @@ export function StatusTimeline({ logs, startedAt, jobs }: StatusTimelineProps) {
             return (
               <div key={log.id} className="flex gap-3">
                 <div className="flex flex-col items-center">
-                  <StepIcon status={log.status} isCurrent={isCurrent} />
+                  <StepIcon event={log.event} isCurrent={isCurrent} />
                   {!isLastRow && <div className="my-1 w-px flex-1 bg-white/[0.08]" />}
                 </div>
                 <div className={isLastRow ? 'min-w-0 flex-1 pb-1' : 'min-w-0 flex-1 pb-6'}>
@@ -135,9 +153,9 @@ export function StatusTimeline({ logs, startedAt, jobs }: StatusTimelineProps) {
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs leading-relaxed text-white/45">
-                    {log.status === 'FAILED' && log.error ? log.error : meta.description}
+                    {log.event === 'FAILED' && log.error ? log.error : meta.description}
                   </p>
-                  {log.status === 'PROCESSING_MEETING' && jobs.length > 0 && (
+                  {log.event === 'MEETING_PROCESSED' && jobRows.length > 0 && (
                     <div className="mt-3">
                       <Accordion
                         defaultOpen
@@ -151,7 +169,7 @@ export function StatusTimeline({ logs, startedAt, jobs }: StatusTimelineProps) {
                           </div>
                         }
                       >
-                        <JobStatusList jobs={jobs} />
+                        <JobStatusList jobs={jobRows} />
                       </Accordion>
                     </div>
                   )}

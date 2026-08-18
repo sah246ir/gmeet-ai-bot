@@ -18,7 +18,7 @@ import {
   formatElapsedSince,
   formatMeetingDate,
   isActiveMeeting,
-  latestStatus,
+  latestLifecycleEvent,
   toDashboardStatus,
 } from '../lib/meetingDisplay'
 
@@ -63,13 +63,13 @@ export function DashboardPage() {
 
   const meetings = meetingsQuery.data ?? []
   const hasNoMeetingsAtAll = meetingsQuery.isSuccess && meetings.length === 0
-  const activeCount = meetings.filter((m) => isActiveMeeting(latestStatus(m.statusLogs))).length
+  const activeCount = meetings.filter((m) => isActiveMeeting(m.state)).length
 
   // Active meetings float to the top; ended (completed) meetings sink to the
   // bottom, each group keeping its existing createdAt-desc order.
   const sortedMeetings = [...meetings].sort((a, b) => {
-    const aActive = isActiveMeeting(latestStatus(a.statusLogs))
-    const bActive = isActiveMeeting(latestStatus(b.statusLogs))
+    const aActive = isActiveMeeting(a.state)
+    const bActive = isActiveMeeting(b.state)
     if (aActive === bActive) return 0
     return aActive ? -1 : 1
   })
@@ -144,9 +144,7 @@ export function DashboardPage() {
               ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {sortedMeetings.map((meeting) => {
-                    const status = latestStatus(meeting.statusLogs)
-
-                    if (!isActiveMeeting(status)) {
+                    if (!isActiveMeeting(meeting.state)) {
                       return (
                         <MeetingCard
                           key={meeting.id}
@@ -158,6 +156,8 @@ export function DashboardPage() {
                       )
                     }
 
+                    const latest = latestLifecycleEvent(meeting.statusLogs)
+
                     return (
                       <MeetingCard
                         key={meeting.id}
@@ -165,9 +165,11 @@ export function DashboardPage() {
                         id={meeting.id}
                         title={deriveMeetingTitle(meeting.url)}
                         url={meeting.url}
-                        status={toDashboardStatus(status) as 'joining' | 'active' | 'processing' | 'failed'}
+                        status={
+                          toDashboardStatus(meeting.statusLogs) as 'joining' | 'active' | 'processing' | 'failed'
+                        }
                         durationLabel={
-                          status === 'STARTING' || status === 'CREATING_JOINEE_BOT' || status === 'JOINING_MEETING'
+                          latest === 'STARTING' || latest === 'CREATING_JOINEE_BOT' || latest === 'JOINING_MEETING'
                             ? 'Starting...'
                             : formatElapsedSince(meeting.createdAt)
                         }

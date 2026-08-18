@@ -15,7 +15,6 @@ import { useEndMeeting, useMeeting, useMeetingInsight, useMeetingTranscripts } f
 import { useEnsureSession } from '../hooks/useSession'
 import {
   deriveMeetingTitle,
-  latestStatus,
   toLifecycleStatus,
 } from '../lib/meetingDisplay'
 import { formatElapsed } from '../mock/meetingDetail'
@@ -47,11 +46,12 @@ export function MeetingDetailPage() {
   const sessionQuery = useEnsureSession()
   const meetingQuery = useMeeting(meetingId)
   const meeting = meetingQuery.data
-  const status = meeting ? latestStatus(meeting.statusLogs) : undefined
-  const hasEnded = status === 'COMPLETED' || status === 'PROCESSING_MEETING'
+  const lifecycleStatus = toLifecycleStatus(meeting?.statusLogs ?? [])
+  const hasEnded = lifecycleStatus !== 'joining' && lifecycleStatus !== 'recording'
 
-  const summaryJob = meeting?.jobs.find((job) => job.type === 'GENERATE_SUMMARY')
-  const insightQuery = useMeetingInsight(meetingId, summaryJob?.status === 'COMPLETED')
+  // statusLogs is ordered newest-first, so the first matching row is current.
+  const summaryJob = meeting?.statusLogs.find((log) => log.event === 'GENERATE_SUMMARY')
+  const insightQuery = useMeetingInsight(meetingId, summaryJob?.status === 'SUCCESS')
 
   const transcriptsQuery = useMeetingTranscripts(meetingId, !!meeting, !hasEnded)
   const endMeeting = useEndMeeting(meetingId)
@@ -88,13 +88,11 @@ export function MeetingDetailPage() {
     )
   }
 
-  const lifecycleStatus = toLifecycleStatus(status!)
-
   const summaryState: SummaryState = !summaryJob
     ? 'locked'
     : summaryJob.status === 'FAILED'
       ? 'error'
-      : summaryJob.status !== 'COMPLETED'
+      : summaryJob.status !== 'SUCCESS'
         ? 'processing'
         : insightQuery.isError
           ? 'error'
@@ -151,7 +149,7 @@ export function MeetingDetailPage() {
           </section>
 
           <div className="mt-10">
-            <StatusTimeline logs={meeting.statusLogs} startedAt={meeting.createdAt} jobs={meeting.jobs} />
+            <StatusTimeline logs={meeting.statusLogs} startedAt={meeting.createdAt} />
           </div>
 
           <section className="mt-16">
