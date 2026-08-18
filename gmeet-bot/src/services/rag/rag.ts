@@ -1,6 +1,7 @@
 import { QueryResponse } from "@pinecone-database/pinecone";
 import { LLMService } from "../llm/llm.js";
 import { ChunkMetadata, PineconeService } from "../pinecone/pinecone.js";
+import { formatTranscriptBlock, parseWords } from "../../lib/transcript-format.js";
 
 export class RagService {
     pineconeService: PineconeService;
@@ -41,36 +42,12 @@ export class RagService {
         return matchResult.matches.map((m)=>{
             const meta = m.metadata
 
-            let words: { word: string; speaker?: number }[] = []
-            try {
-                words = meta?.words ? JSON.parse(meta.words) : []
-            } catch {
-                words = []
-            }
-
-            const speakerLines: string[] = []
-            let currentSpeaker: number | undefined
-            let currentLine: string[] = []
-            for (const w of words) {
-                if (w.speaker !== currentSpeaker) {
-                    if (currentLine.length > 0) {
-                        speakerLines.push(`Speaker ${currentSpeaker ?? "unknown"}: ${currentLine.join(" ")}`)
-                    }
-                    currentSpeaker = w.speaker
-                    currentLine = []
-                }
-                currentLine.push(w.word)
-            }
-            if (currentLine.length > 0) {
-                speakerLines.push(`Speaker ${currentSpeaker ?? "unknown"}: ${currentLine.join(" ")}`)
-            }
-
-            const speakerBlock = speakerLines.length > 0 ? `\nSpeakers:\n${speakerLines.join("\n")}` : ""
-
-            return `
-[${meta?.startTime}s - ${meta?.endTime}s]
-${meta?.text}${speakerBlock}
-`;
+            return formatTranscriptBlock({
+                startTime: meta?.startTime ?? 0,
+                endTime: meta?.endTime ?? 0,
+                text: meta?.text ?? "",
+                words: parseWords(meta?.words),
+            })
         }).join("\n\n")
     }
 }

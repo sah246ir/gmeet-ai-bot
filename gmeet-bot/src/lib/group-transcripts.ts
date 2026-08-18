@@ -1,11 +1,6 @@
 import { TranscriptSegment } from "@prisma/client";
 import { ChunkMetadata } from "../services/pinecone/pinecone.js";
-
-type PersistedWord = { word: string; speaker?: number };
-
-function parseWords(raw: TranscriptSegment["words"]): PersistedWord[] {
-    return Array.isArray(raw) ? (raw as unknown as PersistedWord[]) : [];
-}
+import { parseWords, type PersistedWord } from "./transcript-format.js";
 
 export function groupTranscripts(segments: TranscriptSegment[], meetingId: string, sessionToken: string) {
     const chunks: ChunkMetadata[] = [];
