@@ -52,29 +52,17 @@ export async function joinMeeting(meetingUrl: string) {
     });
     await dismissMediaDialog(page);
 
-    const joinNow = page.getByText('Join now', { exact: true });
-    const askToJoin = page.getByText('Ask to join', { exact: true });
-
-    try {
-        await joinNow.waitFor({
-            state: 'visible',
-            timeout: 15000,
-        });
-
-        console.log('Found Join now');
-        await joinNow.click();
-
-    } catch {
-        console.log('Join now not found, looking for Ask to join');
-
-        await askToJoin.waitFor({
-            state: 'visible',
-            timeout: 15000,
-        });
-
-        console.log('Found Ask to join');
-        await askToJoin.click();
-    }
+    const button = page.getByRole("button", {
+        name: /^(Join now|Ask to join)$/i,
+    });
+    
+    await button.waitFor({
+        state: "visible",
+        timeout: 15000,
+    });
+    
+    console.log(`Found ${await button.innerText()}`);
+    await button.click();
     await page.press("body", "c")
     page.on('console', msg => {
         console.log('BROWSER:', msg.text());

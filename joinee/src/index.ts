@@ -43,6 +43,11 @@ async function main() {
     ws.onmessage = (async(event)=>{
         const data = JSON.parse(event.data as string);
         if(data.type=="meeting-end"){
+            const leaveCall = meeting.page.getByRole("button", { name: "Leave call" });
+
+            if (await leaveCall.isVisible().catch(() => false)) {
+                await leaveCall.click();
+            }
             await meeting.browser.close()
             audioStream.destroy()
             ws.send(
