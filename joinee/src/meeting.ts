@@ -25,7 +25,7 @@ export async function joinMeeting(meetingUrl: string) {
     console.log("MEETING_URL =", meetingUrl);
     const browser = await chromium.launch({
         channel: "chrome",
-        headless: true,
+        headless: false,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
