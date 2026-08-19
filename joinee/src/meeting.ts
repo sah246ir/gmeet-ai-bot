@@ -25,7 +25,7 @@ export async function joinMeeting(meetingUrl: string) {
     console.log("MEETING_URL =", meetingUrl);
     const browser = await chromium.launch({
         channel: "chrome",
-        headless: false,
+        headless: true,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
@@ -62,11 +62,29 @@ export async function joinMeeting(meetingUrl: string) {
     });
     
     console.log(`Found ${await button.innerText()}`);
-    await button.click();
-    await page.press("body", "c")
-    page.on('console', msg => {
-        console.log('BROWSER:', msg.text());
-    });
+
+    try {
+        await button.click({ timeout: 10_000 });
+        console.log("JOIN BUTTON CLICK COMPLETED");
+    } catch (error) {
+        console.error("JOIN BUTTON CLICK FAILED:", error);
+        throw error;
+    }
+    await dismissMediaDialog(page);
+
+    console.log("Checking Meet state after click...");
+
+    await page.waitForTimeout(1000);
+
+    console.log(
+        "Join button still visible:",
+        await button.isVisible().catch(() => false)
+    );
+
+    console.log(
+        "Body after click:",
+        (await page.locator("body").innerText().catch(() => "")).slice(0, 2000)
+    );
     // await page.evaluate(()=>{
     //     const seen = new Set()
     //     const observer = new MutationObserver(()=>{
