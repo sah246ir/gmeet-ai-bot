@@ -1,36 +1,48 @@
-import { Deepgram } from "../deepgram/deepgram.js"
+import { Deepgram, TranscriptEvent } from "../deepgram/deepgram.js"
 
 export class TranscribeManager {
-    private clients: Map<string,Deepgram>
+    private clients: Map<string, Promise<Deepgram>>
     constructor(){
         this.clients = new Map()
     }
-    async createInstance(meetingId: string) {
+
+    // Returns a promise that only resolves once the Deepgram session is
+    // actually open. Every caller for the same meetingId awaits the same
+    // promise, so a chunk that arrives while the session is still connecting
+    // waits instead of racing sendAudio() against an unset connection (which
+    // would otherwise silently drop the chunk).
+    async getInstance(meetingId: string, onTranscript: (event: TranscriptEvent) => void) {
+        let clientPromise = this.clients.get(meetingId)
+        if (!clientPromise) {
+            clientPromise = this.createInstance(meetingId, onTranscript)
+            this.clients.set(meetingId, clientPromise)
+        }
+        return clientPromise
+    }
+
+    private async createInstance(meetingId: string, onTranscript: (event: TranscriptEvent) => void) {
         console.log("CREATING ",meetingId)
         const client = new Deepgram(meetingId);
-        this.clients.set(meetingId, client);
+        client.onTranscript(onTranscript)
         await client.startSession()
         console.log("CREATED ",meetingId)
         return client;
     }
 
-    getInstance(meetingId:string){
-        return this.clients.get(
-            meetingId
-        )
-    }
-
     async removeInstance(meetingId: string) {
-        await this.getInstance(meetingId)?.stopSession()
+        const clientPromise = this.clients.get(meetingId)
         this.clients.delete(meetingId)
+        await (await clientPromise)?.stopSession()
     }
 
     async stopAll() {
-        for (const [meetingId, client] of this.clients) {
-          await client.stopSession();
-          console.log(`Stopped Deepgram session: ${meetingId}`);
-        }
+        const pending = [...this.clients.values()]
+        this.clients.clear()
 
-        this.clients.clear();
+        for (const clientPromise of pending) {
+          const client = await clientPromise
+          await client.stopSession();
+          console.log(`Stopped Deepgram session: ${client.meetingId}`);
+        }
       }
 }
