@@ -1,13 +1,10 @@
+import type { WebSocket } from 'ws';
 import { joinMeeting, waitForMeetingEntry, waitUntilMeetingEnds } from './meeting.js';
 import { handleAudioData, startAudioCapture } from './audio.js';
 import { ENV } from './ENV.js';
 import { initializeWebsocket } from './streamer.js';
 
-async function main() {
-    const ws = initializeWebsocket(ENV.CONSUMER_URL);
-    await new Promise<void>((resolve) => ws.once("open", resolve));
-    console.log("initializeWebsocket")
-
+async function run(ws: WebSocket) {
     ws.send(
         JSON.stringify({
             type: "meeting-joining",
@@ -60,6 +57,26 @@ async function main() {
             meetingId: ENV.MEETING_ID,
         })
     )
-    ws.close()
+}
+
+async function main() {
+    const ws = initializeWebsocket(ENV.CONSUMER_URL);
+    await new Promise<void>((resolve) => ws.once("open", resolve));
+    console.log("initializeWebsocket")
+
+    try {
+        await run(ws)
+    } catch (error) {
+        console.error(error)
+        const message = error instanceof Error ? error.message : String(error)
+        try {
+            ws.send(JSON.stringify({ type: "meeting-failed", meetingId: ENV.MEETING_ID, error: message }))
+        } catch (sendError) {
+            console.error("failed to report failure:", sendError)
+        }
+        throw error
+    } finally {
+        ws.close()
+    }
 }
 main().then(console.log).catch(console.error)
