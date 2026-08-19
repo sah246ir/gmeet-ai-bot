@@ -39,14 +39,6 @@ async function run(ws: WebSocket) {
             if (await leaveCall.isVisible().catch(() => false)) {
                 await leaveCall.click();
             }
-            await meeting.browser.close()
-            audioStream.destroy()
-            ws.send(
-                JSON.stringify({
-                    type: "audio-transcribe-end",
-                    meetingId: ENV.MEETING_ID,
-                })
-            );
         }
     })
     await waitUntilMeetingEnds(meeting)
