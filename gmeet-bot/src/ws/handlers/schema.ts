@@ -3,6 +3,7 @@ import { audioTranscribeChunkSchema } from "./audio-transcribe-chunk/schema.js"
 import { audioTranscribeEndSchema } from "./audio-transcribe-end/schema.js"
 import { meetingJoiningSchema } from "./meeting-joining/schema.js"
 import { meetingJoinedSchema } from "./meeting-joined/schema.js"
+import { meetingFailedSchema } from "./meeting-failed/schema.js"
 
 export const WSEventSchema = z.discriminatedUnion(
     "type",
@@ -10,6 +11,7 @@ export const WSEventSchema = z.discriminatedUnion(
         audioTranscribeChunkSchema,
         audioTranscribeEndSchema,
         meetingJoiningSchema,
-        meetingJoinedSchema
+        meetingJoinedSchema,
+        meetingFailedSchema
     ]
 )

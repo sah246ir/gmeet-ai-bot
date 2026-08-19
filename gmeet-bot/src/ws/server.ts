@@ -5,6 +5,7 @@ import { audioTranscribeChunkHandler } from './handlers/audio-transcribe-chunk/h
 import { audioTranscribeEndHandler } from './handlers/audio-transcribe-end/handler.js';
 import { meetingJoiningHandler } from './handlers/meeting-joining/handler.js';
 import { meetingJoinedHandler } from './handlers/meeting-joined/handler.js';
+import { meetingFailedHandler } from './handlers/meeting-failed/handler.js';
 
 export function attachWebSocketServer(httpServer: HttpServer) {
   const wss = new WebSocketServer({ server: httpServer });
@@ -18,7 +19,7 @@ export function attachWebSocketServer(httpServer: HttpServer) {
         console.log(parsedData.error)
         return
       }
-      
+
       const finaldata = parsedData.data
       switch(finaldata.type){
         case "audio-transcribe-chunk":
@@ -32,6 +33,9 @@ export function attachWebSocketServer(httpServer: HttpServer) {
           break
         case "meeting-joined":
           await meetingJoinedHandler(finaldata)
+          break
+        case "meeting-failed":
+          await meetingFailedHandler(finaldata)
           break
         default:
 
