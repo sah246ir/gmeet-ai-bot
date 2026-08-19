@@ -32,7 +32,11 @@ export class DockerService {
         if (!image) {
             throw new Error("no docker image: pass one explicitly or set DOCKER_IMAGE");
         }
-
+        console.log([
+            `MEETING_URL=${meetingUrl}`,
+            `CONSUMER_URL=${ENV.consumerUrl}`,
+            `MEETING_ID=${meetingId}`,
+        ])
         const createResponse = await this.client.post("/containers/create", {
             Image: image,
             Env: [
@@ -40,6 +44,8 @@ export class DockerService {
                 `CONSUMER_URL=${ENV.consumerUrl}`,
                 `MEETING_ID=${meetingId}`,
             ],
+            OpenStdin: true,
+            Tty: true,
         });
         const containerId = createResponse.data.Id as string;
 
@@ -71,6 +77,12 @@ export class DockerService {
 
     getContainerId(meetingId: string): string | undefined {
         return this.containers.get(meetingId);
+    }
+
+    async destroyAll(){
+        for(let [meetingId] of this.containers.entries()){
+            await this.destroyContainer(meetingId)
+        }
     }
 
     private async waitForReachable(url: string, timeout: number): Promise<void> {
