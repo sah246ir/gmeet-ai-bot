@@ -21,24 +21,28 @@ export function attachWebSocketServer(httpServer: HttpServer) {
       }
 
       const finaldata = parsedData.data
-      switch(finaldata.type){
-        case "audio-transcribe-chunk":
-          await audioTranscribeChunkHandler(finaldata)
-          break
-        case "audio-transcribe-end":
-          await audioTranscribeEndHandler(finaldata)
-          break
-        case "meeting-joining":
-          await meetingJoiningHandler(finaldata)
-          break
-        case "meeting-joined":
-          await meetingJoinedHandler(finaldata)
-          break
-        case "meeting-failed":
-          await meetingFailedHandler(finaldata)
-          break
-        default:
+      try {
+        switch(finaldata.type){
+          case "audio-transcribe-chunk":
+            await audioTranscribeChunkHandler(finaldata)
+            break
+          case "audio-transcribe-end":
+            await audioTranscribeEndHandler(finaldata)
+            break
+          case "meeting-joining":
+            await meetingJoiningHandler(finaldata)
+            break
+          case "meeting-joined":
+            await meetingJoinedHandler(finaldata)
+            break
+          case "meeting-failed":
+            await meetingFailedHandler(finaldata)
+            break
+          default:
 
+        }
+      } catch (error) {
+        console.error(`failed to handle "${finaldata.type}" message:`, error)
       }
 
     });
