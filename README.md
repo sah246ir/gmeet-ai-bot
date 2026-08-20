@@ -1,5 +1,7 @@
 # Meeting Bot
 
+live demo https://lnkd.in/p/gp8-Yv8E
+
 Meeting Bot is an automated assistant that sits in on your Google Meet calls for you. It joins a meeting like a regular attendee, quietly listens to everything that's said, writes it all down (keeping track of who said what), and remembers it. Afterwards, instead of scrubbing through a recording or re-reading a wall of raw text, you can just ask it a plain-English question — "what did we decide about the launch date?" — and it will answer using only what was actually said in that meeting.
 
 ## Architecture
